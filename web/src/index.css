@@ -88,4 +88,15 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+  /* O Tailwind 4 tirou o cursor de mãozinha dos botões; tudo que é clicável volta a ter */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='option'],
+  [role='combobox'],
+  select,
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
 }
