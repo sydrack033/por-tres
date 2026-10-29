@@ -1,4 +1,4 @@
-// Service worker do Pádel Agora: deixa o app abrir sem internet mostrando os últimos dados.
+// Service worker do Por Três: deixa o app abrir sem internet mostrando os últimos dados.
 //  - página (index.html) e dados (JSON): rede primeiro; sem rede, a última cópia salva
 //  - assets/ (JS, CSS, fontes com hash no nome) e ícones: cache primeiro, nunca mudam
 //  - bandeiras (flagcdn): cache, atualizando por trás

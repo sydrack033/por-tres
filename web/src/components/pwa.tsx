@@ -66,7 +66,7 @@ export function ConviteInstalar() {
       <div className="flex items-center gap-3">
         <img src="icons/icon-192.png" alt="" className="size-10 rounded-lg" />
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="font-semibold">Pádel Agora no teu celular</p>
+          <p className="font-semibold">Por Três no teu celular</p>
           <p className="text-xs text-muted-foreground">Abre como app, direto da tela inicial, e funciona sem internet.</p>
         </div>
         <Button size="sm" onClick={instalar}>

@@ -26,9 +26,10 @@ function Marca() {
       </svg>
       <div className="leading-none">
         <p className="font-display text-2xl font-extrabold uppercase tracking-tight">
-          Pádel <span className="text-primary">Agora</span>
+          Por <span className="text-primary">Três</span>
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">Jogos, resultados e onde assistir · horário de Brasília</p>
+        {/* o nome não diz que é pádel: a linha de baixo diz */}
+        <p className="mt-0.5 text-xs text-muted-foreground">Pádel: jogos, resultados e onde assistir · horário de Brasília</p>
       </div>
     </div>
   );

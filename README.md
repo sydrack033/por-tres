@@ -1,4 +1,7 @@
-# Pádel Agora
+# Por Três
+
+> O nome vem do "por três": o smash que quica e sai da quadra por cima do vidro.
+> Domínio pretendido: `portres.com.br` (registro.br).
 
 Site simples com os jogos do pádel profissional (Premier Padel + FIP): agenda do dia,
 resultados, calendário de torneios, ranking e **onde assistir**, tudo no horário de Brasília.
