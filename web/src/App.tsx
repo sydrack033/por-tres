@@ -5,6 +5,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { AbaAgenda, AbaCalendario, AbaRanking, AbaResultados, type Categoria } from '@/secoes/Mundial';
 import { AbaBrasil } from '@/secoes/Brasil';
 import { ConviteInstalar, SeloSemInternet, useConectado } from '@/components/pwa';
+import { BotaoTema } from '@/components/tema';
 import { ESTATICO, useDados, type Status } from '@/lib/dados';
 import { horaBR } from '@/lib/formato';
 
@@ -82,7 +83,10 @@ export default function App() {
         {/* pt com safe-area: no iPhone instalado o app vai até atrás da barra de status */}
         <header className="sticky top-0 z-20 border-b bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/70">
           <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 pt-4">
-            <Marca />
+            <div className="flex items-center justify-between gap-3">
+              <Marca />
+              <BotaoTema />
+            </div>
             <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden rounded-none bg-transparent p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {ABAS.map(([valor, rotulo]) => (
                 <TabsTrigger

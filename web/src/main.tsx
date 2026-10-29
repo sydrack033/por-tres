@@ -11,14 +11,10 @@ import '@fontsource/barlow-condensed/800.css';
 import './index.css';
 import App from './App';
 import { registrarServiceWorker } from '@/components/pwa';
+import { aplicarTemaSalvo } from '@/components/tema';
 
+aplicarTemaSalvo();
 registrarServiceWorker();
-
-// Tema segue o sistema (escuro é o mais comum à noite, vendo jogo)
-const escuro = window.matchMedia('(prefers-color-scheme: dark)');
-const aplicarTema = () => document.documentElement.classList.toggle('dark', escuro.matches);
-aplicarTema();
-escuro.addEventListener('change', aplicarTema);
 
 const consultas = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } } });
 
