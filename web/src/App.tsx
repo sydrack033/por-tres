@@ -21,12 +21,10 @@ type Aba = (typeof ABAS)[number][0];
 function Marca() {
   return (
     <div className="flex items-center gap-2.5">
-      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
-        <circle cx="16" cy="16" r="15" className="fill-bola" />
-        <path d="M5 9c6 3 6 11 0 14M27 9c-6 3-6 11 0 14" className="fill-none stroke-black/30" strokeWidth="2" strokeLinecap="round" />
-      </svg>
+      {/* o 3 com a bola passando por cima (desenho em public/icons; versão de arco grosso, que lê bem pequena) */}
+      <img src="./icons/logo-pequeno.svg" alt="" className="size-9 shrink-0" />
       <div className="leading-none">
-        <p className="font-display text-2xl font-extrabold uppercase tracking-tight">
+        <p className="font-display text-2xl font-extrabold uppercase italic tracking-tight">
           Por <span className="text-primary">Três</span>
         </p>
         {/* o nome não diz que é pádel: a linha de baixo diz */}

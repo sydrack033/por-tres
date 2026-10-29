@@ -2,7 +2,7 @@
 //  - página (index.html) e dados (JSON): rede primeiro; sem rede, a última cópia salva
 //  - assets/ (JS, CSS, fontes com hash no nome) e ícones: cache primeiro, nunca mudam
 //  - bandeiras (flagcdn): cache, atualizando por trás
-const VERSAO = 'v1';
+const VERSAO = 'v2'; // v2: logo novo (ícones com o mesmo nome)
 const CACHE_APP = `app-${VERSAO}`;
 const CACHE_DADOS = `dados-${VERSAO}`;
 const CACHE_EXTERNO = `externo-${VERSAO}`;
