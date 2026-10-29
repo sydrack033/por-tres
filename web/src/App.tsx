@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { AbaAgenda, AbaCalendario, AbaRanking, AbaResultados, type Categoria } from '@/secoes/Mundial';
 import { AbaBrasil } from '@/secoes/Brasil';
+import { ConviteInstalar, SeloSemInternet, useConectado } from '@/components/pwa';
 import { ESTATICO, useDados, type Status } from '@/lib/dados';
 import { horaBR } from '@/lib/formato';
 
@@ -35,11 +36,15 @@ function Marca() {
 
 function SituacaoDados() {
   const { data } = useDados<Status>('/status', undefined, { aoVivo: true });
+  const conectado = useConectado();
   const quando = ESTATICO && data?.geradoEm ? horaBR(new Date(data.geradoEm)) : null;
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <RefreshCw className="size-3" />
-      {quando ? `Dados de ${quando}` : 'Atualiza sozinho'}
+    <span className="inline-flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      {!conectado && <SeloSemInternet />}
+      <span className="inline-flex items-center gap-1.5">
+        <RefreshCw className="size-3" />
+        {quando ? `Dados de ${quando}` : 'Atualiza sozinho'}
+      </span>
     </span>
   );
 }
@@ -73,7 +78,8 @@ export default function App() {
   return (
     <div className="min-h-dvh">
       <Tabs value={aba} onValueChange={(v) => setAba(v as Aba)} className="gap-0">
-        <header className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        {/* pt com safe-area: no iPhone instalado o app vai até atrás da barra de status */}
+        <header className="sticky top-0 z-20 border-b bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/70">
           <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 pt-4">
             <Marca />
             <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden rounded-none bg-transparent p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -91,6 +97,7 @@ export default function App() {
         </header>
 
         <main className="mx-auto w-full max-w-4xl space-y-4 px-4 py-5">
+          <ConviteInstalar />
           <AvisoDemo />
           <div className="flex flex-wrap items-center justify-between gap-2">
             {temFiltro ? (

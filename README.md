@@ -53,6 +53,22 @@ Para mexer no visual com recarga instantânea, deixa o `npm start` rodando e abr
 
 Sem token o circuito mundial sobe em **modo demonstração**, com dados fictícios (a aba Brasil é sempre real).
 
+## App instalável (PWA)
+
+O site instala como app no celular (e no computador), abre em tela cheia e funciona **sem internet**
+mostrando os últimos dados salvos.
+
+- `web/public/manifest.webmanifest`: nome, cores e ícones do app.
+- `web/public/sw.js`: service worker. Página e dados: rede primeiro, sem rede usa a última cópia.
+  JS/CSS/fontes/ícones: do cache (têm hash no nome). Bandeiras: cache, atualizando por trás.
+  Ao mudar a estratégia de cache, sobe a constante `VERSAO` para limpar os caches antigos.
+- Só registra no site compilado (no `npm run dev:web` ele não entra, para não atrapalhar o recarregamento).
+- Convite "Instalar" no topo: no Android/Chrome abre a instalação nativa; no iPhone mostra o passo a passo
+  (Compartilhar > Adicionar à Tela de Início). "×" esconde por 30 dias.
+- Ícones: `node web/scripts/gerar-icones.mjs` gera os PNG em `web/public/icons/` a partir do SVG do script.
+
+Próximo degrau, se quiser ir para as lojas: Capacitor embrulha este mesmo `web/` em app iOS/Android.
+
 ## Front (web/)
 
 React + Vite + TypeScript, **Tailwind CSS**, componentes **shadcn/ui** (Radix), **TanStack Query** para

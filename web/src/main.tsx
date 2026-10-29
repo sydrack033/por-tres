@@ -10,6 +10,9 @@ import '@fontsource/barlow-condensed/700.css';
 import '@fontsource/barlow-condensed/800.css';
 import './index.css';
 import App from './App';
+import { registrarServiceWorker } from '@/components/pwa';
+
+registrarServiceWorker();
 
 // Tema segue o sistema (escuro é o mais comum à noite, vendo jogo)
 const escuro = window.matchMedia('(prefers-color-scheme: dark)');
