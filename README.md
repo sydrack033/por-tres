@@ -23,17 +23,48 @@ O Pages só hospeda arquivo estático, então o site publicado não tem servidor
 - O GitHub desliga agendamentos de repositório público sem commit há 60 dias; se o placar parar, basta um commit
   ou rodar o workflow na mão.
 
-Para gerar e olhar a versão estática localmente: `node scripts/gerar-site.js` (sai em `_site/`).
+Para gerar e olhar a versão estática localmente: `npm run gerar` (sai em `_site/`).
+
+### Analytics (Cloudflare Web Analytics)
+
+Grátis, sem cookie (não precisa de banner) e funciona no Pages. Para ligar:
+
+1. Cria conta grátis em https://dash.cloudflare.com, vai em **Analytics & Logs > Web Analytics > Add a site**
+   e informa `sydrack033.github.io`.
+2. Copia o **token** que aparece no trecho `data-cf-beacon='{"token": "…"}'`.
+3. No GitHub: **Settings > Secrets and variables > Actions > Variables > New variable**, nome
+   `CF_BEACON_TOKEN`, valor = o token. (Ou: `gh variable set CF_BEACON_TOKEN -R sydrack033/padel-agora`.)
+4. Roda o workflow de novo. O token não é segredo: ele aparece no HTML de qualquer site que usa o Cloudflare.
+
+Sem a variável, o site sai sem analytics nenhum.
 
 ## Rodar
 
-Precisa de Node 18 ou mais novo. Não tem dependência para instalar.
+Precisa de Node 20 ou mais novo.
 
 ```bash
-npm start
+npm --prefix web install   # uma vez
+npm run build              # compila o front (web/ -> web/dist)
+npm start                  # servidor com dados na hora: http://localhost:3030
 ```
 
-Abre em http://localhost:3030. Sem token o site sobe em **modo demonstração**, com dados fictícios.
+Para mexer no visual com recarga instantânea, deixa o `npm start` rodando e abre outro terminal com
+`npm run dev:web` (http://localhost:5180; o Vite repassa `/dados` para a porta 3030).
+
+Sem token o circuito mundial sobe em **modo demonstração**, com dados fictícios (a aba Brasil é sempre real).
+
+## Front (web/)
+
+React + Vite + TypeScript, **Tailwind CSS**, componentes **shadcn/ui** (Radix), **TanStack Query** para
+buscar e atualizar os dados sozinho, ícones **Lucide** e fontes Barlow / Barlow Condensed (`@fontsource`,
+servidas pelo próprio site). Tema claro/escuro segue o sistema.
+
+- Cada jogo é uma linha, com o **horário numa coluna fixa à esquerda** (dia embaixo; "AO VIVO" no lugar da
+  hora quando está em quadra), como nos sites de resultados.
+- `web/src/lib/dados.ts`: tipos e `useDados()`; decide entre `/dados/*` (servidor) e `dados/*.json` (Pages)
+  pela `<meta name="modo-dados">`.
+- `web/src/secoes/`: abas do circuito mundial (`Mundial.tsx`) e do Brasil (`Brasil.tsx`).
+- `web/src/components/ui/`: componentes do shadcn (gerados pelo `npx shadcn add`, editáveis).
 
 ## Ligar nos dados de verdade
 
@@ -82,7 +113,10 @@ O arquivo é relido a cada requisição, então não precisa reiniciar depois de
 
 | Arquivo | O que é |
 |---|---|
-| `server.js` | servidor HTTP: estáticos de `public/` + rotas `/dados/*` |
+| `server.js` | servidor HTTP: front compilado (`web/dist`) + rotas `/dados/*` |
+| `src/rotas.js` | monta cada rota `/dados/*` (usado pelo servidor e pelo gerador) |
 | `src/fonte.js` | Padel API (cache + limitador) ou `data/demo.json` |
+| `src/sportscore.js` | lê a timeline do SportScore e transforma em JSON |
 | `src/transmissao.js` | aplica as regras de onde assistir |
-| `public/` | página (HTML, CSS, JS puro) |
+| `scripts/gerar-site.js` | gera a versão estática para o Pages |
+| `web/` | o site (React + Tailwind + shadcn/ui) |

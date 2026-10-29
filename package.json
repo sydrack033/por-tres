@@ -1,14 +1,17 @@
 {
   "name": "padel-site",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Próximos jogos, resultados, calendário e onde assistir pádel profissional (dados da Padel API).",
+  "description": "Próximos jogos, resultados, calendário e onde assistir pádel profissional (dados da Padel API e SportScore).",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev:dados": "node --watch server.js",
+    "dev:web": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "gerar": "npm run build && node scripts/gerar-site.js"
   }
 }

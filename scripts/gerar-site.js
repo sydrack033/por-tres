@@ -26,21 +26,34 @@ const paginas = [
   ...(await torneiosBrConfigurados()).map((t) => [`/dados/br/torneio?id=${t.sportscore}`, `dados/br/torneio-${t.sportscore}.json`]),
 ];
 
-await rm(SAIDA, { recursive: true, force: true });
-await cp(join(RAIZ, 'public'), SAIDA, { recursive: true });
+// O front (web/) precisa estar compilado: npm --prefix web run build
+const FRONT = join(RAIZ, 'web', 'dist');
+try {
+  await readFile(join(FRONT, 'index.html'));
+} catch {
+  console.error('Front não compilado. Rode antes: npm --prefix web run build');
+  process.exit(1);
+}
 
-// O front lê esta marca para buscar dados/*.json em vez de /dados/*.
-// ?v= em app.js e styles.css: o Pages guarda arquivo em cache por 10 min, e sem isso
-// quem já visitou continuaria com o JS antigo depois de um deploy.
-const versao = Date.now().toString(36);
+await rm(SAIDA, { recursive: true, force: true });
+await cp(FRONT, SAIDA, { recursive: true });
+
+// Cloudflare Web Analytics (grátis, sem cookie): só entra se o código do site estiver configurado
+const beacon = process.env.CF_BEACON_TOKEN?.trim();
+const analytics = beacon
+  ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='${JSON.stringify({ token: beacon })}'></script>`
+  : '';
+
+// O front lê a marca "estatico" para buscar dados/*.json em vez de /dados/*.
+// (JS e CSS já saem do Vite com hash no nome, então cada deploy chega na hora.)
 const indice = join(SAIDA, 'index.html');
 await writeFile(
   indice,
   (await readFile(indice, 'utf8'))
     .replace('content="servidor"', 'content="estatico"')
-    .replace('href="styles.css"', `href="styles.css?v=${versao}"`)
-    .replace('src="app.js"', `src="app.js?v=${versao}"`),
+    .replace('<!-- ANALYTICS -->', analytics),
 );
+console.log(beacon ? 'analytics: Cloudflare ligado' : 'analytics: desligado (sem CF_BEACON_TOKEN)');
 
 async function gravar(arquivo, conteudo) {
   const destino = join(SAIDA, arquivo);

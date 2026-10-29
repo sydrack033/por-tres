@@ -10,7 +10,8 @@ const RAIZ = fileURLToPath(new URL('.', import.meta.url));
 
 // Só o .env do projeto, nunca o da pasta de onde o node foi chamado
 try { process.loadEnvFile(join(RAIZ, '.env')); } catch { /* sem .env: modo demonstração */ }
-const PUBLICO = join(RAIZ, 'public');
+// Front compilado (npm --prefix web run build). Para mexer no visual, use o Vite: npm --prefix web run dev
+const PUBLICO = join(RAIZ, 'web', 'dist');
 const PORTA = Number(process.env.PORT) || 3030;
 
 const { modo, rotas: ROTAS } = criarRotas(process.env.PADEL_API_TOKEN);
@@ -21,6 +22,8 @@ const TIPOS = {
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
 };

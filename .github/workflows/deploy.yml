@@ -1,6 +1,6 @@
 name: Atualizar dados e publicar
 
-# Gera o site estático (dados da Padel API + SportScore) e publica no GitHub Pages.
+# Compila o front (web/), gera os dados (Padel API + SportScore) e publica no GitHub Pages.
 # Roda a cada push, a cada 15 minutos e quando pedido na mão (aba Actions > Run workflow).
 on:
   push:
@@ -26,10 +26,18 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Compilar o front
+        run: |
+          npm ci --prefix web
+          npm run build --prefix web
       - name: Gerar site e dados
         run: node scripts/gerar-site.js _site
         env:
           PADEL_API_TOKEN: ${{ secrets.PADEL_API_TOKEN }}
+          # código do Cloudflare Web Analytics (não é segredo: aparece na página). Vazio = sem analytics
+          CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
