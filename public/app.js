@@ -464,7 +464,7 @@ const atualizarStatus = () => buscar(endereco('/status')).then((s) => {
   return s;
 });
 
-atualizarStatus()
+const statusPronto = atualizarStatus()
   .then((s) => {
     if (s.modo === 'demo') {
       const aviso = document.getElementById('aviso-modo');
@@ -474,7 +474,9 @@ atualizarStatus()
   })
   .catch(() => {});
 
-mostrar();
+// No Pages espera o status para já mostrar "Dados de HH:MM" na primeira tela
+if (ESTATICO) statusPronto.then(() => mostrar());
+else mostrar();
 estado.timer = setInterval(async () => {
   if (!['agenda', 'brasil'].includes(estado.aba)) return;
   if (ESTATICO) await atualizarStatus().catch(() => {});
