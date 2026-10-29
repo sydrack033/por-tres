@@ -104,6 +104,35 @@ function resumoBr(cfg, dados) {
   };
 }
 
+function jogosBr(dados) {
+  const clubeUnico = dados.clubes.length === 1 ? dados.clubes[0].rotulo : null;
+  return dados.jogos.map((j) => ({
+    id: j.id,
+    data: j.data,
+    hora: j.hora,
+    inicio: j.inicio,
+    clube: j.clube ?? clubeUnico,
+    quadra: j.quadra,
+    categoria: j.categoria,
+    chave: j.chave,
+    duracao: j.duracao,
+    status: j.status,
+    vencedor: j.vencedor,
+    dupla1: j.duplas[0],
+    dupla2: j.duplas[1],
+  }));
+}
+
+// Janela da aba Jogos: dá para voltar uns dias (resultados) e avançar umas semanas (programação)
+const JANELA_ANTES = 10;
+const JANELA_DEPOIS = 21;
+
+function somaDias(iso, dias) {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
 export function criarRotas(token) {
   const fonte = criarFonte(token);
 
@@ -124,46 +153,50 @@ export function criarRotas(token) {
     return lista.map((t) => ({ ...resumoTorneio(t), ondeAssistir: canaisPara(regras, t, null) }));
   }
 
-  async function rotaAgenda() {
-    const regras = await carregarRegrasTransmissao();
-    const torneios = await torneiosAtuaisEFuturos();
-    const emAndamento = torneios.filter((t) => t.status === 'live' && NIVEIS_PREMIER.includes(t.level));
-    const jogos = [];
-    for (const t of emAndamento.slice(0, 2)) {
-      const partidas = await fonte.jogosDoTorneio(t.id, { sort_by: 'played_at', order_by: 'desc', per_page: 50 });
-      for (const m of partidas.filter(disputado)) {
-        if (['scheduled', 'live'].includes(m.status) || m.played_at === hojeISO()) {
-          jogos.push(montarJogo(m, t, regras));
-        }
-      }
+  // Todos os jogos de um torneio (Major tem ~126: até 3 páginas de 50)
+  async function todosOsJogos(t) {
+    const lista = [];
+    for (let page = 1; page <= 4; page++) {
+      const parte = await fonte.jogosDoTorneio(t.id, { sort_by: 'played_at', order_by: 'asc', per_page: 50, page });
+      lista.push(...parte);
+      if (parte.length < 50) break;
     }
-    const proximos = torneios.filter((t) => t.status === 'pending').slice(0, 3);
-    return {
-      emAndamento: emAndamento.map(resumoTorneio),
-      proximosTorneios: proximos.map((t) => ({ ...resumoTorneio(t), ondeAssistir: canaisPara(regras, t, null) })),
-      jogos,
-    };
+    return lista.filter(disputado);
   }
 
-  async function rotaResultados() {
+  // Aba Jogos: tudo de uma janela de dias (mundial + Brasil); o front filtra pelo dia escolhido
+  async function rotaJogos() {
     const regras = await carregarRegrasTransmissao();
-    const recentes = await fonte.torneios({
-      before_date: hojeISO(),
+    const hoje = hojeISO();
+    const de = somaDias(hoje, -JANELA_ANTES);
+    const ate = somaDias(hoje, JANELA_DEPOIS);
+
+    const torneios = (await fonte.torneios({
+      after_date: de,
+      before_date: ate,
       level: NIVEIS_PREMIER.join(','),
       sort_by: 'start_date',
-      order_by: 'desc',
-      per_page: 4,
-    });
-    const alvo = recentes.filter((t) => ['live', 'finished'].includes(t.status)).slice(0, 2);
-    const jogos = [];
-    for (const t of alvo) {
-      // ordenado por rodada: final, semis, quartas... cabe numa página só
-      const partidas = await fonte.jogosDoTorneio(t.id, { sort_by: 'round', order_by: 'asc', per_page: 50 });
-      for (const m of partidas.filter(disputado)) {
-        if (m.winner) jogos.push(montarJogo(m, t, regras));
+      order_by: 'asc',
+      per_page: 15,
+    })).filter((t) => t.status === 'live' || t.status === 'finished' || (t.status === 'pending' && t.start_date <= somaDias(hoje, 3)));
+
+    const mundial = [];
+    for (const t of torneios) {
+      for (const m of await todosOsJogos(t)) mundial.push(montarJogo(m, t, regras));
+    }
+
+    const configurados = await torneiosBrConfigurados();
+    const brasil = [];
+    for (const cfg of configurados) {
+      if ((cfg.fim && cfg.fim < de) || (cfg.inicio && cfg.inicio > ate)) continue;
+      try {
+        const dados = await torneioSportScore(cfg.sportscore, { anoReferencia: cfg.inicio ? Number(cfg.inicio.slice(0, 4)) : undefined });
+        if (dados.jogos.length) brasil.push({ torneio: resumoBr(cfg, dados), jogos: jogosBr(dados) });
+      } catch (erro) {
+        console.error(`[jogos] SportScore ${cfg.sportscore}:`, erro.message);
       }
     }
-    return { torneios: alvo.map(resumoTorneio), jogos };
+    return { hoje, de, ate, mundial, brasil };
   }
 
   async function rotaRanking(url) {
@@ -199,37 +232,21 @@ export function criarRotas(token) {
     if (!/^\d{1,6}$/.test(id ?? '')) throw Object.assign(new Error('Informe ?id= com o número do torneio no SportScore'), { status: 400 });
     const cfg = (await torneiosBrConfigurados()).find((t) => String(t.sportscore) === id) ?? { sportscore: Number(id) };
     const dados = await torneioSportScore(id, { anoReferencia: cfg.inicio ? Number(cfg.inicio.slice(0, 4)) : undefined });
-    const clubeUnico = dados.clubes.length === 1 ? dados.clubes[0].rotulo : null;
     return {
       torneio: resumoBr(cfg, dados),
       categorias: dados.categorias.map((c) => c.rotulo),
-      jogos: dados.jogos.map((j) => ({
-        id: j.id,
-        data: j.data,
-        hora: j.hora,
-        inicio: j.inicio,
-        clube: j.clube ?? clubeUnico,
-        quadra: j.quadra,
-        categoria: j.categoria,
-        chave: j.chave,
-        duracao: j.duracao,
-        status: j.status,
-        vencedor: j.vencedor,
-        dupla1: j.duplas[0],
-        dupla2: j.duplas[1],
-      })),
+      jogos: jogosBr(dados),
     };
   }
 
   return {
     modo: fonte.modo,
     rotas: {
+      '/dados/jogos': rotaJogos,
       '/dados/br/torneios': rotaBrTorneios,
       '/dados/br/torneio': rotaBrTorneio,
       '/dados/status': async () => ({ modo: fonte.modo, hoje: hojeISO() }),
       '/dados/torneios': rotaTorneios,
-      '/dados/agenda': rotaAgenda,
-      '/dados/resultados': rotaResultados,
       '/dados/ranking': rotaRanking,
     },
   };

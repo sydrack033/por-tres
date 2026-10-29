@@ -100,3 +100,25 @@
     cursor: pointer;
   }
 }
+
+/* Calendário da aba Jogos: bolinha embaixo dos dias que têm jogo, hoje com contorno */
+.dia-com-jogo button {
+  position: relative;
+}
+.dia-com-jogo button::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--primary);
+  transform: translateX(-50%);
+}
+.dia-com-jogo button[data-selected-single='true']::after {
+  background: var(--primary-foreground);
+}
+.dia-hoje button {
+  box-shadow: inset 0 0 0 1px var(--border);
+}

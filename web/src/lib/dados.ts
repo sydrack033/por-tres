@@ -71,8 +71,6 @@ export type Jogo = {
   ondeAssistir: Canal[];
 };
 
-export type Agenda = { emAndamento: Torneio[]; proximosTorneios: Torneio[]; jogos: Jogo[] };
-export type Resultados = { torneios: Torneio[]; jogos: Jogo[] };
 export type LinhaRanking = { posicao: number; variacao: number | string; nome: string; pais: string; pontos: number | string };
 export type Status = { modo: 'api' | 'demo'; hoje: string; geradoEm?: string };
 
@@ -114,3 +112,12 @@ export type JogoBr = {
 };
 
 export type TorneioBrDetalhe = { torneio: TorneioBr; categorias: string[]; jogos: JogoBr[] };
+
+// Aba Jogos: tudo de uma janela de dias; o front filtra pelo dia escolhido
+export type JogosPeriodo = {
+  hoje: string;
+  de: string;
+  ate: string;
+  mundial: Jogo[];
+  brasil: { torneio: TorneioBr; jogos: JogoBr[] }[];
+};

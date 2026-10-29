@@ -78,6 +78,10 @@ React + Vite + TypeScript, **Tailwind CSS**, componentes **shadcn/ui** (Radix), 
 buscar e atualizar os dados sozinho, ícones **Lucide** e fontes Barlow / Barlow Condensed (`@fontsource`,
 servidas pelo próprio site). Tema claro/escuro segue o sistema.
 
+- **Aba Jogos** (estilo SofaScore): faixa de datas + calendário (bolinha nos dias com jogo) e os jogos do dia
+  escolhido separados por campeonato, cada um recolhível ("Recolher todos" também; fica salvo no navegador).
+  Junta circuito mundial e torneios do Brasil. Os dados vêm de `/dados/jogos` (`dados/jogos.json` no Pages):
+  uma janela de 10 dias para trás e 21 para frente; o front só filtra pelo dia.
 - Cada jogo é uma linha, com o **horário numa coluna fixa à esquerda** (dia embaixo; "AO VIVO" no lugar da
   hora quando está em quadra), como nos sites de resultados.
 - `web/src/lib/dados.ts`: tipos e `useDados()`; decide entre `/dados/*` (servidor) e `dados/*.json` (Pages)

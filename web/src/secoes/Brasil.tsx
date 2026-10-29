@@ -108,7 +108,7 @@ function Destacar({ nome, busca }: { nome: string; busca: string }) {
   return <mark className="truncate rounded bg-bola px-0.5 text-black">{nome}</mark>;
 }
 
-function LinhaJogoBr({ jogo: j, busca }: { jogo: JogoBr; busca: string }) {
+export function LinhaJogoBr({ jogo: j, busca = '' }: { jogo: JogoBr; busca?: string }) {
   const nomes = (d: JogoBr['dupla1']) => d.jogadores.map((n) => <Destacar nome={n} busca={busca} />);
   return (
     <div className="flex gap-3 px-4 py-3 sm:gap-4">

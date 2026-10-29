@@ -17,8 +17,7 @@ const { modo, rotas } = criarRotas(process.env.PADEL_API_TOKEN);
 
 // rota do servidor -> arquivo publicado (mesma regra do endereco() em public/app.js)
 const paginas = [
-  ['/dados/agenda', 'dados/agenda.json'],
-  ['/dados/resultados', 'dados/resultados.json'],
+  ['/dados/jogos', 'dados/jogos.json'],
   ['/dados/torneios', 'dados/torneios.json'],
   ['/dados/ranking?categoria=men', 'dados/ranking-men.json'],
   ['/dados/ranking?categoria=women', 'dados/ranking-women.json'],

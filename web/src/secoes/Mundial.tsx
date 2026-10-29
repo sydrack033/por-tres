@@ -1,16 +1,16 @@
-// Abas do circuito mundial (Premier Padel + FIP): agenda, resultados, calendário e ranking.
+// Circuito mundial (Premier Padel + FIP): linha de jogo (usada na aba Jogos), calendário e ranking.
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Aviso, Bandeira, CabecalhoTorneio, Canais, Carregando, ColunaHora, LinhaDupla, type InfoHora,
+  Aviso, Bandeira, Canais, Carregando, ColunaHora, LinhaDupla, type InfoHora,
 } from '@/components/partes';
-import { useDados, type Agenda, type Jogo, type LinhaRanking, type Resultados, type Torneio } from '@/lib/dados';
+import { useDados, type Jogo, type LinhaRanking, type Torneio } from '@/lib/dados';
 import { diaISO, diaMes, horaBR, horarioMadriParaData, periodo, rotuloDia } from '@/lib/formato';
 
 export type Categoria = 'todos' | 'men' | 'women';
 
-const RODADAS: Record<number, string> = { 0: 'Fase de grupos', 1: 'Final', 2: 'Semifinal', 4: 'Quartas', 8: 'Oitavas', 16: 'Rodada de 32', 32: 'Rodada de 64' };
+export const RODADAS: Record<number, string> = { 0: 'Fase de grupos', 1: 'Final', 2: 'Semifinal', 4: 'Quartas', 8: 'Oitavas', 16: 'Rodada de 32', 32: 'Rodada de 64' };
 const CATEGORIAS = { men: 'Masculino', women: 'Feminino' } as const;
 const ENCERRADO = ['finished', 'ended', 'retired', 'walkover'];
 
@@ -27,7 +27,7 @@ function infoHora(j: Jogo): InfoHora {
   return { tipo: 'indefinido', hora: '—', dia: rotuloDia(j.data), nota: 'a definir' };
 }
 
-function LinhaJogo({ jogo: j }: { jogo: Jogo }) {
+export function LinhaJogo({ jogo: j }: { jogo: Jogo }) {
   const aindaVai = j.status === 'scheduled' || j.status === 'live';
   const nomes = (d: Jogo['dupla1']) => d.map((p) => (
     <>
@@ -50,85 +50,6 @@ function LinhaJogo({ jogo: j }: { jogo: Jogo }) {
       </div>
     </div>
   );
-}
-
-function agruparPorTorneio(jogos: Jogo[]) {
-  const grupos = new Map<number, { torneio: Torneio; jogos: Jogo[] }>();
-  for (const j of jogos) {
-    if (!grupos.has(j.torneio.id)) grupos.set(j.torneio.id, { torneio: j.torneio, jogos: [] });
-    grupos.get(j.torneio.id)!.jogos.push(j);
-  }
-  return [...grupos.values()];
-}
-
-const semDupla = (j: Jogo) => !j.dupla1.length && !j.dupla2.length;
-
-// Rodadas futuras ainda sem dupla viram uma linha só: "Depois: Semifinal sex., 30/10 · Final sáb., 31/10"
-function RodadasFuturas({ jogos }: { jogos: Jogo[] }) {
-  const vistas = new Map<string, Jogo>();
-  for (const j of jogos) vistas.set(`${j.rodada}|${j.data}`, vistas.get(`${j.rodada}|${j.data}`) ?? j);
-  const itens = [...vistas.values()].sort((a, b) => (a.data ?? '').localeCompare(b.data ?? ''));
-  if (!itens.length) return null;
-  return (
-    <p className="px-1 pt-2 text-xs text-muted-foreground">
-      Depois: {itens.map((j) => `${RODADAS[j.rodada] ?? j.nomeRodada} ${j.data ? rotuloDia(j.data).toLowerCase() : 'a definir'}`).join(' · ')}
-    </p>
-  );
-}
-
-function ListaPorTorneio({ jogos }: { jogos: Jogo[] }) {
-  return (
-    <div className="space-y-6">
-      {agruparPorTorneio(jogos).map(({ torneio: t, jogos: lista }) => {
-        const definidos = lista.filter((j) => !semDupla(j));
-        return (
-          <section key={t.id}>
-            <CabecalhoTorneio nome={t.nome} nivel={t.nivel} pais={t.pais} local={t.cidade} inicio={t.inicio} fim={t.fim} />
-            {definidos.length > 0 && (
-              <Card className="gap-0 divide-y overflow-hidden py-0">
-                {definidos.map((j) => <LinhaJogo key={j.id} jogo={j} />)}
-              </Card>
-            )}
-            <RodadasFuturas jogos={lista.filter(semDupla)} />
-          </section>
-        );
-      })}
-    </div>
-  );
-}
-
-const filtrar = (jogos: Jogo[], categoria: Categoria) => (categoria === 'todos' ? jogos : jogos.filter((j) => j.categoria === categoria));
-
-function ordemAgenda(a: Jogo, b: Jogo) {
-  const peso = (j: Jogo) => (j.status === 'live' ? 0 : j.status === 'scheduled' ? 1 : 2);
-  const tempo = (j: Jogo) => horarioMadriParaData(j.horarioMadri)?.getTime() ?? Infinity;
-  return peso(a) - peso(b) || tempo(a) - tempo(b) || (a.ordemQuadra ?? 99) - (b.ordemQuadra ?? 99);
-}
-
-export function AbaAgenda({ categoria }: { categoria: Categoria }) {
-  const { data, isPending, error } = useDados<Agenda>('/agenda', undefined, { aoVivo: true });
-  if (isPending) return <Carregando />;
-  if (error) return <Aviso tipo="erro">Não consegui carregar a agenda: {error.message}</Aviso>;
-  const jogos = filtrar(data.jogos, categoria).sort(ordemAgenda);
-  return (
-    <div className="space-y-8">
-      {jogos.length ? <ListaPorTorneio jogos={jogos} /> : <Aviso>Nenhum jogo do circuito principal hoje.</Aviso>}
-      {data.proximosTorneios.length > 0 && (
-        <section>
-          <h2 className="px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Próximos torneios</h2>
-          <ListaTorneios torneios={data.proximosTorneios} />
-        </section>
-      )}
-    </div>
-  );
-}
-
-export function AbaResultados({ categoria }: { categoria: Categoria }) {
-  const { data, isPending, error } = useDados<Resultados>('/resultados');
-  if (isPending) return <Carregando />;
-  if (error) return <Aviso tipo="erro">Não consegui carregar os resultados: {error.message}</Aviso>;
-  const jogos = filtrar(data.jogos, categoria);
-  return jogos.length ? <ListaPorTorneio jogos={jogos} /> : <Aviso>Sem resultados recentes.</Aviso>;
 }
 
 function ListaTorneios({ torneios }: { torneios: Torneio[] }) {

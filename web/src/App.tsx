@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { AbaAgenda, AbaCalendario, AbaRanking, AbaResultados, type Categoria } from '@/secoes/Mundial';
+import { AbaCalendario, AbaRanking, type Categoria } from '@/secoes/Mundial';
 import { AbaBrasil } from '@/secoes/Brasil';
+import { AbaJogos } from '@/secoes/Jogos';
 import { ConviteInstalar, SeloSemInternet, useConectado } from '@/components/pwa';
 import { BotaoTema } from '@/components/tema';
 import { ESTATICO, useDados, type Status } from '@/lib/dados';
 import { horaBR } from '@/lib/formato';
 
 const ABAS = [
-  ['agenda', 'Agenda'],
-  ['resultados', 'Resultados'],
+  ['jogos', 'Jogos'],
   ['calendario', 'Calendário'],
   ['ranking', 'Ranking'],
   ['brasil', 'Brasil'],
@@ -72,10 +72,10 @@ function FiltroCategoria({ valor, onMudar, comTodos }: { valor: Categoria; onMud
 }
 
 export default function App() {
-  const [aba, setAba] = useState<Aba>('agenda');
+  const [aba, setAba] = useState<Aba>('jogos');
   const [categoria, setCategoria] = useState<Categoria>('todos');
   const categoriaRanking = categoria === 'women' ? 'women' : 'men';
-  const temFiltro = aba === 'agenda' || aba === 'resultados' || aba === 'ranking';
+  const temFiltro = aba === 'jogos' || aba === 'ranking';
 
   return (
     <div className="min-h-dvh">
@@ -115,8 +115,7 @@ export default function App() {
             <SituacaoDados />
           </div>
 
-          <TabsContent value="agenda"><AbaAgenda categoria={categoria} /></TabsContent>
-          <TabsContent value="resultados"><AbaResultados categoria={categoria} /></TabsContent>
+          <TabsContent value="jogos"><AbaJogos categoria={categoria} /></TabsContent>
           <TabsContent value="calendario"><AbaCalendario /></TabsContent>
           <TabsContent value="ranking"><AbaRanking categoria={categoriaRanking} /></TabsContent>
           <TabsContent value="brasil"><AbaBrasil /></TabsContent>
