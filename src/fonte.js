@@ -38,10 +38,18 @@ function fonteApi(token) {
     for (const [k, v] of Object.entries(params ?? {})) {
       if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
     }
-    await aguardarVaga();
-    const resp = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-    });
+    let resp;
+    // 429 = estourou o limite por minuto (às vezes por outra máquina usando o mesmo token):
+    // espera o minuto virar e tenta de novo, até 2 vezes
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      await aguardarVaga();
+      resp = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      });
+      if (resp.status !== 429 || tentativa === 2) break;
+      const espera = (Number(resp.headers.get('retry-after')) || 61) * 1000;
+      await new Promise((ok) => setTimeout(ok, espera));
+    }
     if (!resp.ok) {
       const corpo = await resp.json().catch(() => ({}));
       const erro = new Error(`Padel API ${resp.status}: ${corpo.message ?? resp.statusText}`);
