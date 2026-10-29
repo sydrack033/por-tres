@@ -66,25 +66,54 @@ function horarioMadriParaData(texto) {
 }
 
 const fmtHora = new Intl.DateTimeFormat('pt-BR', { timeZone: FUSO_BR, hour: '2-digit', minute: '2-digit' });
-const fmtDiaHora = new Intl.DateTimeFormat('pt-BR', { timeZone: FUSO_BR, weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: 'short' });
 const fmtDiaCurto = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', day: '2-digit', month: 'short' });
 
 const diaISO = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: FUSO_BR }).format(d);
 const dataSemFuso = (iso) => new Date(iso + 'T12:00:00Z');
 
-function textoHorario(jogo) {
-  if (jogo.status === 'live') return 'Em quadra agora';
-  const quando = horarioMadriParaData(jogo.horarioMadri);
-  if (quando) {
-    const hoje = diaISO(new Date()) === diaISO(quando);
-    const rotulo = jogo.rotuloHorario?.toLowerCase() ?? '';
-    const prefixo = rotulo.startsWith('not before') ? 'não antes de ' : rotulo.startsWith('estimated') ? '~' : '';
-    return `${prefixo}${hoje ? fmtHora.format(quando) : fmtDiaHora.format(quando)} <small>Brasília</small>`;
+const fmtDiaCard = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: '2-digit' });
+
+// Rótulo curto do dia: "Hoje", "Amanhã" ou "sex., 30/10"
+function rotuloDia(iso) {
+  if (!iso) return '';
+  const hoje = diaISO(new Date());
+  const amanha = diaISO(new Date(Date.now() + 86_400_000));
+  return iso === hoje ? 'Hoje' : iso === amanha ? 'Amanhã' : fmtDiaCard.format(dataSemFuso(iso));
+}
+
+// Bloco do horário no topo do card: linha pequena (dia/condição) + o horário grande
+function htmlHora({ tipo, acima, principal }) {
+  return `<div class="jogo-hora ${tipo}">
+    ${acima ? `<small>${acima}</small>` : ''}
+    <strong>${principal}</strong>
+  </div>`;
+}
+
+function horaMundial(j) {
+  if (j.status === 'live') return { tipo: 'vivo', acima: 'Em quadra', principal: 'Ao vivo' };
+  if (['finished', 'ended', 'retired', 'walkover'].includes(j.status)) {
+    return { tipo: 'fim', acima: rotuloDia(j.data), principal: STATUS[j.status] ?? 'Encerrado' };
   }
-  if (jogo.rotuloHorario?.toLowerCase().startsWith('followed')) return 'Na sequência';
-  if (jogo.data) return `${fmtDia.format(dataSemFuso(jogo.data))} <small>horário a definir</small>`;
-  return '<small>Horário a definir</small>';
+  const quando = horarioMadriParaData(j.horarioMadri);
+  const rotulo = j.rotuloHorario?.toLowerCase() ?? '';
+  if (quando) {
+    const condicao = rotulo.startsWith('not before') ? 'não antes de' : rotulo.startsWith('estimated') ? 'previsto' : '';
+    return { tipo: 'agendado', acima: [rotuloDia(diaISO(quando)), condicao].filter(Boolean).join(' · '), principal: fmtHora.format(quando) };
+  }
+  if (rotulo.startsWith('followed')) return { tipo: 'agendado', acima: rotuloDia(j.data), principal: 'Na sequência' };
+  return { tipo: 'indefinido', acima: rotuloDia(j.data), principal: 'A definir' };
+}
+
+function horaBr(j) {
+  if (j.status === 'live') return { tipo: 'vivo', acima: j.inicio ? `Começou ${esc(j.inicio)}` : 'Em quadra', principal: 'Ao vivo' };
+  if (j.status === 'finished') return { tipo: 'fim', acima: [rotuloDia(j.data), j.inicio && `começou ${esc(j.inicio)}`].filter(Boolean).join(' · '), principal: 'Encerrado' };
+  if (j.hora) return { tipo: 'agendado', acima: rotuloDia(j.data), principal: esc(j.hora) };
+  return { tipo: 'indefinido', acima: rotuloDia(j.data), principal: 'A definir' };
+}
+
+function htmlOnde(titulo, detalhes) {
+  return `<div class="jogo-onde"><strong>${esc(titulo)}</strong>${detalhes.filter(Boolean).map((d) => `<span>${esc(d)}</span>`).join('')}</div>`;
 }
 
 function periodo(inicio, fim) {
@@ -114,19 +143,18 @@ function htmlDupla(jogadores, cabeca, sets, lado, venceu) {
 
 function htmlJogo(j, { mostrarTorneio = false } = {}) {
   const vivo = j.status === 'live';
+  const vaiAcontecer = j.status === 'scheduled' || vivo;
   const rodada = RODADAS[j.rodada] ?? j.nomeRodada ?? '';
-  const quadra = j.quadra ? ` · ${esc(j.quadra)}` : '';
   return `<article class="jogo ${vivo ? 'vivo' : ''}">
-    <div class="jogo-topo">
-      <span>${esc(CATEGORIAS[j.categoria] ?? '')} · ${esc(rodada)}${quadra}${mostrarTorneio ? ` · ${esc(j.torneio.cidade)}` : ''}</span>
-      <span class="status ${vivo ? 'vivo' : ''}">${esc(STATUS[j.status] ?? j.status)}</span>
+    <div class="jogo-cab">
+      ${htmlHora(horaMundial(j))}
+      ${htmlOnde(rodada, [CATEGORIAS[j.categoria], j.quadra, mostrarTorneio && j.torneio.cidade])}
     </div>
     ${htmlDupla(j.dupla1, j.cabecas?.team_1, j.placar, 'team_1', j.vencedor === 'team_1')}
     ${htmlDupla(j.dupla2, j.cabecas?.team_2, j.placar, 'team_2', j.vencedor === 'team_2')}
-    <div class="jogo-rodape">
-      <span class="horario">${j.status === 'scheduled' || vivo ? textoHorario(j) : j.duracao ? `Duração ${esc(j.duracao)}` : ''}</span>
-      ${j.status === 'scheduled' || vivo ? htmlCanais(j.ondeAssistir) : ''}
-    </div>
+    ${vaiAcontecer
+      ? `<div class="jogo-rodape">${htmlCanais(j.ondeAssistir)}</div>`
+      : j.duracao ? `<div class="jogo-rodape"><span class="local">Duração ${esc(j.duracao)}</span></div>` : ''}
   </article>`;
 }
 
@@ -293,16 +321,14 @@ function htmlDuplaBr(dupla, adversaria, venceu) {
 
 function htmlJogoBr(j) {
   const vivo = j.status === 'live';
-  const onde = [j.categoria, j.chave && `Chave ${j.chave}`, j.clube, j.quadra && `Quadra ${j.quadra}`].filter(Boolean).map(esc).join(' · ');
-  const rotuloStatus = { live: 'Em quadra', scheduled: 'Agendado', finished: 'Encerrado' }[j.status];
-  const rodape = j.status === 'finished'
-    ? [j.inicio && `Começou ${esc(j.inicio)}`, j.duracao && esc(j.duracao)].filter(Boolean).join(' · ')
-    : `${esc(j.hora ?? 'Horário a definir')}`;
   return `<article class="jogo ${vivo ? 'vivo' : ''}">
-    <div class="jogo-topo"><span>${onde}</span><span class="status ${vivo ? 'vivo' : ''}">${rotuloStatus}</span></div>
+    <div class="jogo-cab">
+      ${htmlHora(horaBr(j))}
+      ${htmlOnde(j.categoria ?? '', [j.chave && `Chave ${j.chave}`, j.quadra ? `Quadra ${j.quadra}` : j.clube])}
+    </div>
     ${htmlDuplaBr(j.dupla1, j.dupla2, j.vencedor === 1)}
     ${htmlDuplaBr(j.dupla2, j.dupla1, j.vencedor === 2)}
-    <div class="jogo-rodape"><span class="horario">${rodape}</span><small class="local">Jogo ${esc(j.id)}</small></div>
+    <div class="jogo-rodape"><small class="local">${[j.duracao && `Duração ${esc(j.duracao)}`, `Jogo ${esc(j.id)}`].filter(Boolean).join(' · ')}</small></div>
   </article>`;
 }
 
