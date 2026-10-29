@@ -29,9 +29,18 @@ const paginas = [
 await rm(SAIDA, { recursive: true, force: true });
 await cp(join(RAIZ, 'public'), SAIDA, { recursive: true });
 
-// O front lê esta marca para buscar dados/*.json em vez de /dados/*
+// O front lê esta marca para buscar dados/*.json em vez de /dados/*.
+// ?v= em app.js e styles.css: o Pages guarda arquivo em cache por 10 min, e sem isso
+// quem já visitou continuaria com o JS antigo depois de um deploy.
+const versao = Date.now().toString(36);
 const indice = join(SAIDA, 'index.html');
-await writeFile(indice, (await readFile(indice, 'utf8')).replace('content="servidor"', 'content="estatico"'));
+await writeFile(
+  indice,
+  (await readFile(indice, 'utf8'))
+    .replace('content="servidor"', 'content="estatico"')
+    .replace('href="styles.css"', `href="styles.css?v=${versao}"`)
+    .replace('src="app.js"', `src="app.js?v=${versao}"`),
+);
 
 async function gravar(arquivo, conteudo) {
   const destino = join(SAIDA, arquivo);
