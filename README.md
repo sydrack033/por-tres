@@ -1,7 +1,7 @@
 # Por Três
 
 > O nome vem do "por três": o smash que quica e sai da quadra por cima do vidro.
-> Domínio pretendido: `portres.com.br` (registro.br).
+> Domínio: `portres.com.br` (registro.br, DNS no modo avançado apontando para o GitHub Pages).
 
 Site simples com os jogos do pádel profissional (Premier Padel + FIP): agenda do dia,
 resultados, calendário de torneios, ranking e **onde assistir**, tudo no horário de Brasília.
@@ -9,7 +9,10 @@ resultados, calendário de torneios, ranking e **onde assistir**, tudo no horár
 Os dados vêm da [Padel API](https://padelapi.org). O "onde assistir" não existe em API
 nenhuma: fica em `data/onde-assistir.json`, mantido à mão.
 
-**No ar:** https://sydrack033.github.io/padel-agora/
+**No ar:** https://portres.com.br
+
+DNS no registro.br: quatro registros `A` para `185.199.108.153`, `.109.153`, `.110.153` e `.111.153`, e `www` como `CNAME`
+para `sydrack033.github.io`. O domínio está configurado em **Settings > Pages** do repositório.
 
 ## Publicação (GitHub Pages)
 
@@ -33,10 +36,10 @@ Para gerar e olhar a versão estática localmente: `npm run gerar` (sai em `_sit
 Grátis, sem cookie (não precisa de banner) e funciona no Pages. Para ligar:
 
 1. Cria conta grátis em https://dash.cloudflare.com, vai em **Analytics & Logs > Web Analytics > Add a site**
-   e informa `sydrack033.github.io`.
+   e informa `portres.com.br`.
 2. Copia o **token** que aparece no trecho `data-cf-beacon='{"token": "…"}'`.
 3. No GitHub: **Settings > Secrets and variables > Actions > Variables > New variable**, nome
-   `CF_BEACON_TOKEN`, valor = o token. (Ou: `gh variable set CF_BEACON_TOKEN -R sydrack033/padel-agora`.)
+   `CF_BEACON_TOKEN`, valor = o token. (Ou: `gh variable set CF_BEACON_TOKEN -R sydrack033/por-tres`.)
 4. Roda o workflow de novo. O token não é segredo: ele aparece no HTML de qualquer site que usa o Cloudflare.
 
 Sem a variável, o site sai sem analytics nenhum.
