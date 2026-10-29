@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pádel Agora</title>
+  <meta name="modo-dados" content="servidor">
+  <meta name="description" content="Próximos jogos, resultados, calendário e onde assistir pádel profissional, no horário de Brasília.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎾</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <h1 class="marca">Pádel <span>Agora</span></h1>
+      <p class="sub">Jogos, resultados e onde assistir. Horário de Brasília.</p>
+    </div>
+    <nav class="abas" role="tablist">
+      <button role="tab" data-aba="agenda" aria-selected="true">Agenda</button>
+      <button role="tab" data-aba="resultados">Resultados</button>
+      <button role="tab" data-aba="calendario">Calendário</button>
+      <button role="tab" data-aba="ranking">Ranking</button>
+      <button role="tab" data-aba="brasil">Brasil</button>
+    </nav>
+  </header>
+
+  <div id="aviso-modo" class="aviso" hidden></div>
+
+  <main>
+    <div class="filtros" id="filtros">
+      <button data-cat="todos" aria-pressed="true">Todos</button>
+      <button data-cat="men" aria-pressed="false">Masculino</button>
+      <button data-cat="women" aria-pressed="false">Feminino</button>
+      <span class="atualizado" id="atualizado"></span>
+    </div>
+    <section id="conteudo" aria-live="polite"></section>
+  </main>
+
+  <footer class="rodape">
+    Dados: <a href="https://padelapi.org" target="_blank" rel="noopener">Padel API</a> (circuito mundial) e
+    <a href="https://www.sportscore.com.br" target="_blank" rel="noopener">SportScore</a> (torneios no Brasil).
+    "Onde assistir" é mantido à mão em <code>data/onde-assistir.json</code>. Confira no site oficial da Premier Padel.
+  </footer>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

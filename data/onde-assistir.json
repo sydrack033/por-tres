@@ -1,0 +1,62 @@
+{
+  "atualizado_em": "2026-10-28",
+  "observacao": "Montado a partir de guias de terceiros (padelspeak, Red Bull). Confira em premierpadel.com antes de publicar. Rodadas: 1=final, 2=semi, 4=quartas, 8=oitavas, 16=R32, 32=R64.",
+  "canais": {
+    "youtube": {
+      "nome": "YouTube Premier Padel",
+      "tipo": "grátis",
+      "url": "https://www.youtube.com/@PremierPadel"
+    },
+    "espn": {
+      "nome": "ESPN",
+      "tipo": "TV a cabo",
+      "url": "https://www.espn.com.br/"
+    },
+    "disney": {
+      "nome": "Disney+ (ESPN)",
+      "tipo": "streaming",
+      "url": "https://www.disneyplus.com/pt-br"
+    },
+    "redbull": {
+      "nome": "Red Bull TV (em inglês)",
+      "tipo": "grátis",
+      "url": "https://www.redbull.com/br-pt/tv"
+    },
+    "fip": {
+      "nome": "FIP TV (YouTube)",
+      "tipo": "grátis",
+      "url": "https://www.youtube.com/@FIPpadel"
+    }
+  },
+  "regras": [
+    {
+      "descricao": "Premier Padel, rodadas iniciais",
+      "niveis": ["major", "p1", "p2"],
+      "rodadas": [32, 16, 8],
+      "canais": ["youtube", "espn"]
+    },
+    {
+      "descricao": "Premier Padel, quartas até a final",
+      "niveis": ["major", "p1", "p2", "finals"],
+      "rodadas": [4, 2, 1],
+      "canais": ["espn", "disney"]
+    },
+    {
+      "descricao": "Red Bull TV transmite o circuito em inglês",
+      "niveis": ["major", "p1", "p2", "finals"],
+      "canais": ["redbull"]
+    },
+    {
+      "descricao": "Finals (torneio de fim de temporada)",
+      "niveis": ["finals"],
+      "rodadas": [0],
+      "canais": ["espn", "disney"]
+    },
+    {
+      "descricao": "Circuito FIP",
+      "niveis": ["fip_platinum", "fip_gold"],
+      "canais": ["fip"]
+    }
+  ],
+  "por_torneio": {}
+}

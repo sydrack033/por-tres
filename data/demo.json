@@ -1,0 +1,139 @@
+{
+  "referencia": "2026-10-28",
+  "aviso": "Dados FICTÍCIOS só para o modo demonstração. Formato igual ao da Padel API.",
+  "torneios": [
+    {
+      "id": 900, "name": "Paris Premier Padel Major", "level": "major", "location": "Paris", "country": "FR",
+      "timezone": "Europe/Paris", "status": "finished", "start_date": "2026-10-05", "end_date": "2026-10-11",
+      "url": null, "photo_url": null, "venue": { "name": "Roland Garros", "address": null }
+    },
+    {
+      "id": 901, "name": "Kuwait Premier Padel Major", "level": "major", "location": "Kuwait City", "country": "KW",
+      "timezone": "Asia/Kuwait", "status": "live", "start_date": "2026-10-26", "end_date": "2026-10-31",
+      "url": null, "photo_url": null, "venue": { "name": "Sheikh Saad Al-Abdullah Complex", "address": null }
+    },
+    {
+      "id": 902, "name": "Dubai Premier Padel P1", "level": "p1", "location": "Dubai", "country": "AE",
+      "timezone": "Asia/Dubai", "status": "pending", "start_date": "2026-11-09", "end_date": "2026-11-15",
+      "url": null, "photo_url": null, "venue": null
+    },
+    {
+      "id": 903, "name": "FIP Platinum São Paulo", "level": "fip_platinum", "location": "São Paulo", "country": "BR",
+      "timezone": "America/Sao_Paulo", "status": "pending", "start_date": "2026-11-16", "end_date": "2026-11-22",
+      "url": null, "photo_url": null, "venue": null
+    },
+    {
+      "id": 904, "name": "Barcelona Premier Padel Finals", "level": "finals", "location": "Barcelona", "country": "ES",
+      "timezone": "Europe/Madrid", "status": "pending", "start_date": "2026-12-07", "end_date": "2026-12-13",
+      "url": null, "photo_url": null, "venue": { "name": "Palau Sant Jordi", "address": null }
+    }
+  ],
+  "jogos": {
+    "900": [
+      {
+        "id": 90001, "category": "men", "round": 1, "round_name": "Final", "status": "finished",
+        "players": { "team_1": [{ "name": "Arturo Coello", "nationality": "ES" }, { "name": "Agustín Tapia", "nationality": "AR" }],
+                     "team_2": [{ "name": "Alejandro Galán", "nationality": "ES" }, { "name": "Federico Chingotto", "nationality": "AR" }] },
+        "seeds": { "team_1": "1", "team_2": "2" },
+        "score": [{ "team_1": "6", "team_2": "4" }, { "team_1": "3", "team_2": "6" }, { "team_1": "7", "team_2": "6(4)" }],
+        "winner": "team_1", "played_at": "2026-10-11", "scheduled_at": "2026-10-11 18:30:00",
+        "court": "Philippe-Chatrier", "duration": "02:14"
+      },
+      {
+        "id": 90002, "category": "women", "round": 1, "round_name": "Final", "status": "finished",
+        "players": { "team_1": [{ "name": "Gemma Triay", "nationality": "ES" }, { "name": "Delfi Brea", "nationality": "AR" }],
+                     "team_2": [{ "name": "Ari Sánchez", "nationality": "ES" }, { "name": "Paula Josemaría", "nationality": "ES" }] },
+        "seeds": { "team_1": "2", "team_2": "1" },
+        "score": [{ "team_1": "7", "team_2": "5" }, { "team_1": "6", "team_2": "3" }],
+        "winner": "team_1", "played_at": "2026-10-11", "scheduled_at": "2026-10-11 16:30:00",
+        "court": "Philippe-Chatrier", "duration": "01:32"
+      },
+      {
+        "id": 90003, "category": "men", "round": 2, "round_name": "Semifinal", "status": "finished",
+        "players": { "team_1": [{ "name": "Arturo Coello", "nationality": "ES" }, { "name": "Agustín Tapia", "nationality": "AR" }],
+                     "team_2": [{ "name": "Paquito Navarro", "nationality": "ES" }, { "name": "Francisco Guerrero", "nationality": "ES" }] },
+        "seeds": { "team_1": "1", "team_2": "4" },
+        "score": [{ "team_1": "6", "team_2": "2" }, { "team_1": "6", "team_2": "4" }],
+        "winner": "team_1", "played_at": "2026-10-10", "scheduled_at": "2026-10-10 19:00:00",
+        "court": "Philippe-Chatrier", "duration": "01:21"
+      }
+    ],
+    "901": [
+      {
+        "id": 90101, "category": "men", "round": 8, "round_name": "Round of 16", "status": "finished",
+        "players": { "team_1": [{ "name": "Alejandro Galán", "nationality": "ES" }, { "name": "Federico Chingotto", "nationality": "AR" }],
+                     "team_2": [{ "name": "Mike Yanguas", "nationality": "ES" }, { "name": "Coki Nieto", "nationality": "ES" }] },
+        "seeds": { "team_1": "2", "team_2": null },
+        "score": [{ "team_1": "6", "team_2": "3" }, { "team_1": "4", "team_2": "6" }, { "team_1": "6", "team_2": "2" }],
+        "winner": "team_1", "played_at": "2026-10-27", "scheduled_at": "2026-10-27 15:00:00",
+        "court": "Central", "duration": "01:58"
+      },
+      {
+        "id": 90102, "category": "men", "round": 4, "round_name": "Quarterfinal", "status": "finished",
+        "players": { "team_1": [{ "name": "Arturo Coello", "nationality": "ES" }, { "name": "Agustín Tapia", "nationality": "AR" }],
+                     "team_2": [{ "name": "Juan Lebrón", "nationality": "ES" }, { "name": "Leo Augsburger", "nationality": "AR" }] },
+        "seeds": { "team_1": "1", "team_2": "5" },
+        "score": [{ "team_1": "6", "team_2": "4" }, { "team_1": "6", "team_2": "4" }],
+        "winner": "team_1", "played_at": "2026-10-28", "scheduled_at": "2026-10-28 10:00:00",
+        "court": "Central", "court_order": 1, "duration": "01:17"
+      },
+      {
+        "id": 90103, "category": "women", "round": 4, "round_name": "Quarterfinal", "status": "live",
+        "players": { "team_1": [{ "name": "Gemma Triay", "nationality": "ES" }, { "name": "Delfi Brea", "nationality": "AR" }],
+                     "team_2": [{ "name": "Bea González", "nationality": "ES" }, { "name": "Claudia Fernández", "nationality": "ES" }] },
+        "seeds": { "team_1": "2", "team_2": "3" },
+        "score": [{ "team_1": "6", "team_2": "4" }, { "team_1": "2", "team_2": "3" }],
+        "winner": null, "played_at": "2026-10-28", "scheduled_at": "2026-10-28 12:00:00",
+        "schedule_label": "Not before 12:00", "court": "Central", "court_order": 2, "duration": null
+      },
+      {
+        "id": 90104, "category": "men", "round": 4, "round_name": "Quarterfinal", "status": "scheduled",
+        "players": { "team_1": [{ "name": "Alejandro Galán", "nationality": "ES" }, { "name": "Federico Chingotto", "nationality": "AR" }],
+                     "team_2": [{ "name": "Paquito Navarro", "nationality": "ES" }, { "name": "Francisco Guerrero", "nationality": "ES" }] },
+        "seeds": { "team_1": "2", "team_2": "4" },
+        "score": null, "winner": null, "played_at": "2026-10-28", "scheduled_at": "2026-10-28 14:30:00",
+        "schedule_label": "Followed by", "court": "Central", "court_order": 3, "duration": null
+      },
+      {
+        "id": 90105, "category": "women", "round": 4, "round_name": "Quarterfinal", "status": "scheduled",
+        "players": { "team_1": [{ "name": "Ari Sánchez", "nationality": "ES" }, { "name": "Paula Josemaría", "nationality": "ES" }],
+                     "team_2": [{ "name": "Marta Ortega", "nationality": "ES" }, { "name": "Sofía Araújo", "nationality": "PT" }] },
+        "seeds": { "team_1": "1", "team_2": "6" },
+        "score": null, "winner": null, "played_at": "2026-10-28", "scheduled_at": "2026-10-28 16:30:00",
+        "schedule_label": "Not before 16:30", "court": "Central", "court_order": 4, "duration": null
+      },
+      {
+        "id": 90106, "category": "men", "round": 2, "round_name": "Semifinal", "status": "scheduled",
+        "players": { "team_1": [{ "name": "Arturo Coello", "nationality": "ES" }, { "name": "Agustín Tapia", "nationality": "AR" }],
+                     "team_2": [] },
+        "seeds": { "team_1": "1", "team_2": null },
+        "score": null, "winner": null, "played_at": "2026-10-30", "scheduled_at": null,
+        "schedule_label": null, "court": null, "court_order": null, "duration": null
+      }
+    ]
+  },
+  "ranking": {
+    "men": [
+      { "ranking": 1, "ranking_diff": 0, "name": "Arturo Coello", "nationality": "ES", "points": 21500, "date": "2026-10-26" },
+      { "ranking": 1, "ranking_diff": 0, "name": "Agustín Tapia", "nationality": "AR", "points": 21500, "date": "2026-10-26" },
+      { "ranking": 3, "ranking_diff": 0, "name": "Alejandro Galán", "nationality": "ES", "points": 17200, "date": "2026-10-26" },
+      { "ranking": 3, "ranking_diff": 1, "name": "Federico Chingotto", "nationality": "AR", "points": 17200, "date": "2026-10-26" },
+      { "ranking": 5, "ranking_diff": -1, "name": "Paquito Navarro", "nationality": "ES", "points": 11800, "date": "2026-10-26" },
+      { "ranking": 6, "ranking_diff": 2, "name": "Francisco Guerrero", "nationality": "ES", "points": 11300, "date": "2026-10-26" },
+      { "ranking": 7, "ranking_diff": 0, "name": "Juan Lebrón", "nationality": "ES", "points": 10900, "date": "2026-10-26" },
+      { "ranking": 8, "ranking_diff": -2, "name": "Leo Augsburger", "nationality": "AR", "points": 10400, "date": "2026-10-26" },
+      { "ranking": 9, "ranking_diff": 3, "name": "Mike Yanguas", "nationality": "ES", "points": 8700, "date": "2026-10-26" },
+      { "ranking": 10, "ranking_diff": 0, "name": "Coki Nieto", "nationality": "ES", "points": 8550, "date": "2026-10-26" }
+    ],
+    "women": [
+      { "ranking": 1, "ranking_diff": 0, "name": "Ari Sánchez", "nationality": "ES", "points": 19800, "date": "2026-10-26" },
+      { "ranking": 1, "ranking_diff": 0, "name": "Paula Josemaría", "nationality": "ES", "points": 19800, "date": "2026-10-26" },
+      { "ranking": 3, "ranking_diff": 0, "name": "Gemma Triay", "nationality": "ES", "points": 18900, "date": "2026-10-26" },
+      { "ranking": 4, "ranking_diff": 0, "name": "Delfi Brea", "nationality": "AR", "points": 18400, "date": "2026-10-26" },
+      { "ranking": 5, "ranking_diff": 1, "name": "Bea González", "nationality": "ES", "points": 14100, "date": "2026-10-26" },
+      { "ranking": 6, "ranking_diff": -1, "name": "Claudia Fernández", "nationality": "ES", "points": 13600, "date": "2026-10-26" },
+      { "ranking": 7, "ranking_diff": 0, "name": "Marta Ortega", "nationality": "ES", "points": 9900, "date": "2026-10-26" },
+      { "ranking": 8, "ranking_diff": 2, "name": "Sofía Araújo", "nationality": "PT", "points": 9300, "date": "2026-10-26" }
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "observacao": "Torneios brasileiros acompanhados. 'sportscore' é o ID do torneio no sportscore.com.br (aparece na URL: /timeline/{id}/...). Datas e cidade daqui têm prioridade sobre o que vier da fonte.",
+  "torneios": [
+    {
+      "sportscore": 479,
+      "nome": "Liga Brasileira de Padel · Etapa 1",
+      "cidade": "Balneário Camboriú/SC",
+      "local": "Expocentro + clubes parceiros",
+      "inicio": "2026-11-04",
+      "fim": "2026-11-07",
+      "destaque": true,
+      "premio": "R$ 1 milhão",
+      "links": [
+        { "nome": "Site da Liga", "url": "https://ligabrasileiradepadel.com.br/" },
+        { "nome": "Inscrições", "url": "https://www.sportscore.com.br/inscricao/479/liga-brasileira-da-padel.html" },
+        { "nome": "Inscritos", "url": "https://www.sportscore.com.br/lista-inscritos/479/liga-brasileira-da-padel.html" },
+        { "nome": "Instagram", "url": "https://www.instagram.com/ligabrasileiradepadel" }
+      ],
+      "ondeAssistir": []
+    },
+    {
+      "sportscore": 519,
+      "nome": "Copa Zee Rucci 2026 · 3ª Etapa",
+      "cidade": "Balneário Camboriú/SC",
+      "local": "Central Padel",
+      "inicio": "2026-10-30",
+      "fim": "2026-11-01",
+      "links": [
+        { "nome": "Tabela no SportScore", "url": "https://www.sportscore.com.br/timeline/519/copa-zee-rucci-de-padel-2026-3-etapa-central-padel.html" }
+      ],
+      "ondeAssistir": []
+    },
+    {
+      "sportscore": 530,
+      "nome": "2ª Copa Embraed",
+      "cidade": "SC",
+      "local": "Pulse Arena Padel Land",
+      "inicio": "2026-11-20",
+      "fim": "2026-11-22",
+      "links": [
+        { "nome": "Inscrições", "url": "https://www.sportscore.com.br/inscricao/530/2-copa-embraed-pulse-arena-padel-land-20-a-22-11-2026.html" }
+      ],
+      "ondeAssistir": []
+    },
+    {
+      "sportscore": 510,
+      "nome": "Circuito Interno Padel Center · 6ª Masculina",
+      "cidade": null,
+      "local": "Padel Center",
+      "inicio": "2026-10-02",
+      "fim": "2026-10-02",
+      "links": [],
+      "ondeAssistir": []
+    }
+  ]
+}
