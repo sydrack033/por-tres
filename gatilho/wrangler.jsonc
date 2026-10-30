@@ -1,0 +1,12 @@
+// Worker do Cloudflare que dispara o robô do site de 5 em 5 minutos (ver README, "Gatilho").
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "por-tres-gatilho",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  // Só roda pelo agendamento: nenhum endereço público
+  "workers_dev": false,
+  "triggers": { "crons": ["*/5 * * * *"] },
+  // Registro de cada disparo no painel (Workers > por-tres-gatilho > Logs)
+  "observability": { "enabled": true }
+}

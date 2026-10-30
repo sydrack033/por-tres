@@ -37,6 +37,23 @@ O Pages só hospeda arquivo estático, então o site publicado não tem servidor
 
 Para gerar e olhar a versão estática localmente: `npm run gerar` (sai em `_site/`).
 
+### Gatilho de 5 em 5 minutos (Cloudflare Worker)
+
+O agendamento do GitHub Actions não tem hora garantida: em dia cheio ele atrasa e pula execuções. O `gatilho/` é um
+Worker do Cloudflare (grátis: até 100 mil execuções por dia) com um cron de 5 em 5 minutos que chama o
+`workflow_dispatch` do `deploy.yml`. Não tem endereço público: só roda pelo cron.
+
+Para montar (uma vez):
+
+1. Token no GitHub (https://github.com/settings/personal-access-tokens/new): fine-grained,
+   **Only select repositories → por-tres**, permissão **Actions: Read and write** e mais nada.
+2. `cd gatilho && npm install && npx wrangler login` (abre o navegador para autorizar a conta do Cloudflare).
+3. `npx wrangler deploy` (cria o Worker e o cron).
+4. `npx wrangler secret put GITHUB_TOKEN` e cola o token do passo 1.
+
+Para conferir: a aba Actions mostra uma execução `workflow_dispatch` a cada 5 minutos; no Cloudflare, o log de cada
+disparo fica em **Workers > por-tres-gatilho > Logs**. Token vencido: gera outro igual e repete o passo 4.
+
 ### Analytics (Cloudflare Web Analytics)
 
 Grátis, sem cookie (não precisa de banner) e funciona no Pages. Para ligar:
@@ -158,4 +175,5 @@ O arquivo é relido a cada requisição, então não precisa reiniciar depois de
 | `src/sportscore.js` | lê a timeline do SportScore e transforma em JSON |
 | `src/transmissao.js` | aplica as regras de onde assistir |
 | `scripts/gerar-site.js` | gera a versão estática para o Pages |
+| `gatilho/` | Worker do Cloudflare que dispara o robô de 5 em 5 minutos |
 | `web/` | o site (React + Tailwind + shadcn/ui) |

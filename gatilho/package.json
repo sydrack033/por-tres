@@ -1,0 +1,13 @@
+{
+  "name": "por-tres-gatilho",
+  "private": true,
+  "description": "Worker do Cloudflare que dispara o robô do portres.com.br de 5 em 5 minutos.",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "logs": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.0"
+  }
+}
