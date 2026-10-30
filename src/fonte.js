@@ -7,19 +7,28 @@ const BASE = 'https://padelapi.org/api';
 // Plano free: 10 req/min. Fica uma folga.
 const LIMITE_POR_MINUTO = 9;
 
+// Quanto vale cada resposta. O robô do site guarda o cache de uma execução para a outra
+// (scripts/gerar-site.js), então isto também decide quanto da cota do mês ele gasta.
 const TTL = {
-  torneios: 30 * 60_000,
-  jogos: 3 * 60_000,
+  torneios: 60 * 60_000,
+  jogos: 3 * 60_000, // torneio em andamento
+  jogosFuturos: 30 * 60_000, // ainda não começou: chave e horários saem aos poucos
+  jogosEncerrados: 12 * 60 * 60_000, // já acabou: só confere de vez em quando
   ranking: 6 * 60 * 60_000,
 };
 
-export function criarFonte(token) {
-  return token ? fonteApi(token) : fonteDemo();
+// Resposta vencida ainda serve se a API falhar; depois disso some do cache guardado
+const GUARDA_VENCIDO = 2 * 24 * 60 * 60_000;
+
+// guardado: o que fonte.paraGuardar() devolveu na execução anterior
+export function criarFonte(token, guardado) {
+  return token ? fonteApi(token, guardado) : fonteDemo();
 }
 
-function fonteApi(token) {
-  const cache = new Map(); // chave -> { expira, valor, promessa }
+function fonteApi(token, guardado = {}) {
+  const cache = new Map(Object.entries(guardado)); // chave -> { expira, valor, promessa }
   const chamadas = []; // horários das últimas chamadas, para o limitador
+  let feitas = 0;
 
   async function aguardarVaga() {
     for (;;) {
@@ -43,6 +52,7 @@ function fonteApi(token) {
     // espera o minuto virar e tenta de novo, até 2 vezes
     for (let tentativa = 0; tentativa < 3; tentativa++) {
       await aguardarVaga();
+      feitas++;
       resp = await fetch(url, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       });
@@ -87,8 +97,16 @@ function fonteApi(token) {
   return {
     modo: 'api',
     torneios: (params) => comCache('torneios', '/tournaments', params),
-    jogosDoTorneio: (id, params) => comCache('jogos', `/tournaments/${encodeURIComponent(id)}/matches`, params),
+    // tipo: 'jogos', 'jogosFuturos' ou 'jogosEncerrados' (ver TTL)
+    jogosDoTorneio: (id, params, tipo = 'jogos') => comCache(tipo, `/tournaments/${encodeURIComponent(id)}/matches`, params),
     ranking: (params) => comCache('ranking', '/rankings', params),
+    chamadasFeitas: () => feitas,
+    paraGuardar: () =>
+      Object.fromEntries(
+        [...cache]
+          .filter(([, item]) => item.valor && item.expira > Date.now() - GUARDA_VENCIDO)
+          .map(([chave, { expira, valor }]) => [chave, { expira, valor }]),
+      ),
   };
 }
 
@@ -152,5 +170,7 @@ function fonteDemo() {
       const { ranking } = await carregar();
       return (ranking[category] ?? []).slice(0, per_page);
     },
+    chamadasFeitas: () => 0,
+    paraGuardar: () => ({}),
   };
 }

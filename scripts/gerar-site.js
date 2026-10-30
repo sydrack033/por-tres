@@ -1,6 +1,10 @@
 // Gera a versão estática do site (para o GitHub Pages): copia public/ e grava cada rota
-// /dados/* como arquivo JSON. Roda no GitHub Actions a cada 15 minutos; o token da Padel API
-// vem do segredo PADEL_API_TOKEN e nunca vai para os arquivos publicados.
+// /dados/* como arquivo JSON. Roda no GitHub Actions a cada 5 minutos (quem dispara é o Worker
+// do Cloudflare em gatilho/); o token da Padel API vem do segredo PADEL_API_TOKEN e nunca vai
+// para os arquivos publicados.
+//
+// O cache das fontes fica em .cache-robo/ de uma execução para a outra (o Actions guarda a pasta):
+// assim cada execução só busca o que pode ter mudado e o robô cabe na cota grátis da Padel API.
 //
 //   node scripts/gerar-site.js [pasta-de-saída]   (padrão: _site)
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -13,7 +17,15 @@ const SAIDA = join(RAIZ, process.argv[2] ?? '_site');
 
 try { process.loadEnvFile(join(RAIZ, '.env')); } catch { /* no Actions o token vem do ambiente */ }
 
-const { modo, rotas } = criarRotas(process.env.PADEL_API_TOKEN);
+// Sobe a versão quando o formato do que vai no cache mudar: cache de outra versão é ignorado
+const CACHE = { arquivo: join(RAIZ, '.cache-robo', 'cache.json'), versao: 1 };
+let guardado = {};
+try {
+  const lido = JSON.parse(await readFile(CACHE.arquivo, 'utf8'));
+  if (lido.versao === CACHE.versao) guardado = lido;
+} catch { /* primeira execução: busca tudo */ }
+
+const { modo, rotas, cacheParaGuardar, chamadas } = criarRotas(process.env.PADEL_API_TOKEN, guardado);
 
 // rota do servidor -> arquivo publicado (mesma regra do endereco() em public/app.js)
 const paginas = [
@@ -73,5 +85,16 @@ for (const [rota, arquivo] of paginas) {
   }
 }
 
-await gravar('dados/status.json', { modo, hoje: (await rotas['/dados/status']()).hoje, geradoEm: new Date().toISOString(), falhas });
+await mkdir(dirname(CACHE.arquivo), { recursive: true });
+await writeFile(CACHE.arquivo, JSON.stringify({ versao: CACHE.versao, ...cacheParaGuardar() }));
+
+const gastas = chamadas();
+await gravar('dados/status.json', {
+  modo,
+  hoje: (await rotas['/dados/status']()).hoje,
+  geradoEm: new Date().toISOString(),
+  falhas,
+  chamadas: gastas,
+});
 console.log(`\nSite gerado em ${SAIDA} (modo ${modo}, ${paginas.length - falhas}/${paginas.length} páginas de dados)`);
+console.log(`Chamadas nesta execução: Padel API ${gastas.padel}, SportScore ${gastas.sportscore}`);

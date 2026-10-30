@@ -15,7 +15,8 @@ const CATEGORIAS = { men: 'Masculino', women: 'Feminino' } as const;
 const ENCERRADO = ['finished', 'ended', 'retired', 'walkover'];
 
 function infoHora(j: Jogo): InfoHora {
-  if (j.status === 'live') return { tipo: 'vivo', hora: '' };
+  // O plano grátis da Padel API não tem placar ao vivo: ele só chega quando o jogo acaba
+  if (j.status === 'live') return { tipo: 'vivo', hora: '', nota: j.placar?.length ? undefined : 'placar no fim' };
   if (ENCERRADO.includes(j.status)) return { tipo: 'fim', hora: 'Fim', dia: rotuloDia(j.data) };
   const quando = horarioMadriParaData(j.horarioMadri);
   const rotulo = j.rotuloHorario?.toLowerCase() ?? '';

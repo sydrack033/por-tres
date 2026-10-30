@@ -1,12 +1,15 @@
 name: Atualizar dados e publicar
 
 # Compila o front (web/), gera os dados (Padel API + SportScore) e publica no GitHub Pages.
-# Roda a cada push, a cada 15 minutos e quando pedido na mão (aba Actions > Run workflow).
+# Roda a cada push, a cada 5 minutos (workflow_dispatch chamado pelo Worker do Cloudflare em
+# gatilho/) e quando pedido na mão (aba Actions > Run workflow).
 on:
   push:
     branches: [main]
   schedule:
-    - cron: '*/15 * * * *'
+    # Reserva, caso o Worker pare: o agendamento do GitHub atrasa e pula execuções.
+    # Fora da virada da hora, que é quando ele mais atrasa.
+    - cron: '17,47 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -14,9 +17,11 @@ permissions:
   pages: write
   id-token: write
 
+# Uma execução por vez, sem cancelar a que está no meio (ela chega a publicar);
+# se chegarem várias enquanto isso, só a mais nova fica na fila.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -32,12 +37,25 @@ jobs:
         run: |
           npm ci --prefix web
           npm run build --prefix web
+      # Cache das fontes de uma execução para a outra: só busca de novo o que pode ter mudado.
+      # A chave muda a cada execução; o restore pega a mais recente que começa com "robo-".
+      - name: Recuperar o cache do robô
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache-robo
+          key: robo-${{ github.run_id }}
+          restore-keys: robo-
       - name: Gerar site e dados
         run: node scripts/gerar-site.js _site
         env:
           PADEL_API_TOKEN: ${{ secrets.PADEL_API_TOKEN }}
           # código do Cloudflare Web Analytics (não é segredo: aparece na página). Vazio = sem analytics
           CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+      - name: Guardar o cache do robô
+        uses: actions/cache/save@v6
+        with:
+          path: .cache-robo
+          key: robo-${{ github.run_id }}-${{ github.run_attempt }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

@@ -10,17 +10,37 @@ const CABECALHOS = { 'User-Agent': 'PadelAgora/0.1 (prototipo)', Accept: 'text/h
 // Situações do filtro "sit" da timeline
 export const SITUACAO = { aberto: 1, confirmado: 2, iniciado: 3, emAnalise: 9, finalizado: 10 };
 
-const cache = new Map(); // url -> { expira, valor, promessa }
+// HTML vencido ainda serve se o SportScore falhar; depois disso some do cache guardado
+const GUARDA_VENCIDO = 2 * 24 * 60 * 60_000;
 
-async function buscarHtml(url) {
+const cache = new Map(); // url -> { expira, valor, promessa }
+let feitas = 0;
+
+// O robô do site guarda o cache de uma execução para a outra (scripts/gerar-site.js)
+export function carregarCacheSportScore(guardado = {}) {
+  for (const [url, item] of Object.entries(guardado)) cache.set(url, item);
+}
+
+export function cacheSportScoreParaGuardar() {
+  return Object.fromEntries(
+    [...cache]
+      .filter(([, item]) => item.valor && item.expira > Date.now() - GUARDA_VENCIDO)
+      .map(([url, { expira, valor }]) => [url, { expira, valor }]),
+  );
+}
+
+export const chamadasSportScore = () => feitas;
+
+async function buscarHtml(url, ttl = TTL_MS) {
   const item = cache.get(url);
   if (item?.valor && item.expira > Date.now()) return item.valor;
   if (item?.promessa) return item.promessa;
+  feitas++;
   const promessa = fetch(url, { headers: CABECALHOS })
     .then(async (resp) => {
       if (!resp.ok) throw Object.assign(new Error(`SportScore ${resp.status}`), { status: 502 });
       const valor = await resp.text();
-      cache.set(url, { valor, expira: Date.now() + TTL_MS });
+      cache.set(url, { valor, expira: Date.now() + ttl });
       return valor;
     })
     .catch((erro) => {
@@ -120,9 +140,13 @@ function vencedor(d1, d2) {
 
 const urlTimeline = (id, sit = '') => `${BASE}/timeline/?id=${encodeURIComponent(id)}&cat=&club=&data=&sit=${sit}`;
 
-export async function torneioSportScore(id, { anoReferencia } = {}) {
+// ttl: quanto tempo a resposta vale (torneio acontecendo hoje vence rápido; ver rotas.js)
+export async function torneioSportScore(id, { anoReferencia, ttl } = {}) {
   // Duas chamadas: todos os jogos + só os iniciados (a lista não marca quem está em quadra)
-  const [html, htmlIniciados] = await Promise.all([buscarHtml(urlTimeline(id)), buscarHtml(urlTimeline(id, SITUACAO.iniciado))]);
+  const [html, htmlIniciados] = await Promise.all([
+    buscarHtml(urlTimeline(id), ttl),
+    buscarHtml(urlTimeline(id, SITUACAO.iniciado), ttl),
+  ]);
   // Torneio com inscrição aberta e tabela ainda não gerada responde "Evento não encontrado."
   if (!html.includes('pdl-title')) {
     return { id: Number(id), titulo: null, publicado: false, categorias: [], clubes: [], datas: [], jogos: [] };

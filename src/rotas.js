@@ -3,7 +3,7 @@
 import { readFile } from 'node:fs/promises';
 import { criarFonte } from './fonte.js';
 import { canaisPara, carregarRegrasTransmissao } from './transmissao.js';
-import { torneioSportScore } from './sportscore.js';
+import { cacheSportScoreParaGuardar, carregarCacheSportScore, chamadasSportScore, torneioSportScore } from './sportscore.js';
 
 // Níveis que interessam: circuito Premier Padel + FIP mais forte
 const NIVEIS_PRINCIPAIS = ['major', 'p1', 'p2', 'finals', 'fip_platinum', 'fip_gold'];
@@ -67,6 +67,18 @@ export async function torneiosBrConfigurados() {
   const arquivo = new URL('../data/torneios-br.json', import.meta.url);
   return JSON.parse(await readFile(arquivo, 'utf8')).torneios;
 }
+
+// Torneio acontecendo hoje (ou sem data cadastrada): confere a cada execução do robô.
+// Fora disso, bem menos, para não ficar batendo no SportScore.
+function ttlBr(cfg) {
+  const hoje = hojeISO();
+  if (cfg.fim && cfg.fim < hoje) return 12 * 60 * 60_000;
+  if (cfg.inicio && cfg.inicio > hoje) return 60 * 60_000;
+  return 3 * 60_000;
+}
+
+const buscarBr = (cfg) =>
+  torneioSportScore(cfg.sportscore, { anoReferencia: cfg.inicio ? Number(cfg.inicio.slice(0, 4)) : undefined, ttl: ttlBr(cfg) });
 
 function contarStatus(jogos) {
   const conta = { live: 0, scheduled: 0, finished: 0 };
@@ -133,8 +145,10 @@ function somaDias(iso, dias) {
   return d.toISOString().slice(0, 10);
 }
 
-export function criarRotas(token) {
-  const fonte = criarFonte(token);
+// guardado: o que cacheParaGuardar() devolveu na execução anterior do robô (opcional)
+export function criarRotas(token, guardado = {}) {
+  const fonte = criarFonte(token, guardado.padel);
+  carregarCacheSportScore(guardado.sportscore);
 
   async function torneiosAtuaisEFuturos() {
     const lista = await fonte.torneios({
@@ -153,11 +167,21 @@ export function criarRotas(token) {
     return lista.map((t) => ({ ...resumoTorneio(t), ondeAssistir: canaisPara(regras, t, null) }));
   }
 
+  // Quanto valem os jogos de um torneio: o que já acabou quase não muda.
+  // Um dia de folga no fim: a final nas Américas termina depois da meia-noite de Brasília.
+  function tipoJogos(t) {
+    const hoje = hojeISO();
+    if (t.status === 'finished' || t.end_date < somaDias(hoje, -1)) return 'jogosEncerrados';
+    if (t.status === 'live' || t.start_date <= hoje) return 'jogos';
+    return 'jogosFuturos';
+  }
+
   // Todos os jogos de um torneio (Major tem ~126: até 3 páginas de 50)
   async function todosOsJogos(t) {
+    const tipo = tipoJogos(t);
     const lista = [];
     for (let page = 1; page <= 4; page++) {
-      const parte = await fonte.jogosDoTorneio(t.id, { sort_by: 'played_at', order_by: 'asc', per_page: 50, page });
+      const parte = await fonte.jogosDoTorneio(t.id, { sort_by: 'played_at', order_by: 'asc', per_page: 50, page }, tipo);
       lista.push(...parte);
       if (parte.length < 50) break;
     }
@@ -190,7 +214,7 @@ export function criarRotas(token) {
     for (const cfg of configurados) {
       if ((cfg.fim && cfg.fim < de) || (cfg.inicio && cfg.inicio > ate)) continue;
       try {
-        const dados = await torneioSportScore(cfg.sportscore, { anoReferencia: cfg.inicio ? Number(cfg.inicio.slice(0, 4)) : undefined });
+        const dados = await buscarBr(cfg);
         if (dados.jogos.length) brasil.push({ torneio: resumoBr(cfg, dados), jogos: jogosBr(dados) });
       } catch (erro) {
         console.error(`[jogos] SportScore ${cfg.sportscore}:`, erro.message);
@@ -214,7 +238,7 @@ export function criarRotas(token) {
 
   async function rotaBrTorneios() {
     const lista = await torneiosBrConfigurados();
-    const resultados = await Promise.allSettled(lista.map((cfg) => torneioSportScore(cfg.sportscore)));
+    const resultados = await Promise.allSettled(lista.map(buscarBr));
     return lista
       .map((cfg, i) => {
         const r = resultados[i];
@@ -231,7 +255,7 @@ export function criarRotas(token) {
     const id = url.searchParams.get('id');
     if (!/^\d{1,6}$/.test(id ?? '')) throw Object.assign(new Error('Informe ?id= com o número do torneio no SportScore'), { status: 400 });
     const cfg = (await torneiosBrConfigurados()).find((t) => String(t.sportscore) === id) ?? { sportscore: Number(id) };
-    const dados = await torneioSportScore(id, { anoReferencia: cfg.inicio ? Number(cfg.inicio.slice(0, 4)) : undefined });
+    const dados = await buscarBr(cfg);
     return {
       torneio: resumoBr(cfg, dados),
       categorias: dados.categorias.map((c) => c.rotulo),
@@ -241,6 +265,9 @@ export function criarRotas(token) {
 
   return {
     modo: fonte.modo,
+    // o robô do site guarda isto até a próxima execução e conta o que gastou
+    cacheParaGuardar: () => ({ padel: fonte.paraGuardar(), sportscore: cacheSportScoreParaGuardar() }),
+    chamadas: () => ({ padel: fonte.chamadasFeitas(), sportscore: chamadasSportScore() }),
     rotas: {
       '/dados/jogos': rotaJogos,
       '/dados/br/torneios': rotaBrTorneios,

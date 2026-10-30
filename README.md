@@ -21,13 +21,19 @@ O Pages só hospeda arquivo estático, então o site publicado não tem servidor
 - `scripts/gerar-site.js` roda as mesmas rotas do `server.js` (lógica em `src/rotas.js`) e grava
   cada uma como JSON em `_site/dados/`. O `index.html` publicado sai marcado como `estatico`,
   e o front passa a ler `dados/*.json` em vez de `/dados/*`.
-- O GitHub Actions (`.github/workflows/deploy.yml`) roda isso **a cada push e a cada 15 minutos**
-  e publica no Pages. O placar no ar fica no máximo uns 15–20 min atrás (o agendamento do GitHub atrasa um pouco).
+- O GitHub Actions (`.github/workflows/deploy.yml`) roda isso **a cada push e a cada 5 minutos** e publica no
+  Pages; cada execução leva uns 40 s. Quem dispara de 5 em 5 minutos é um Worker do Cloudflare (`gatilho/`, ver
+  abaixo): o agendamento do próprio GitHub atrasa e pula execuções (já ficou 6 h sem rodar), então ele ficou só
+  de reserva, duas vezes por hora.
+- **Cache entre execuções:** o robô guarda as respostas das fontes em `.cache-robo/` e o Actions salva essa pasta
+  de uma execução para a outra (`actions/cache`). Assim cada execução só busca o que pode ter mudado; os prazos
+  estão no `TTL` de `src/fonte.js` e no `ttlBr` de `src/rotas.js`. O `dados/status.json` publicado mostra quantas
+  chamadas a última execução gastou em cada fonte.
 - O token da Padel API fica no segredo `PADEL_API_TOKEN` do repositório. Ele só existe durante o build
   e não vai para nenhum arquivo publicado.
 - Para atualizar na hora: aba **Actions > Atualizar dados e publicar > Run workflow**.
-- O GitHub desliga agendamentos de repositório público sem commit há 60 dias; se o placar parar, basta um commit
-  ou rodar o workflow na mão.
+- O GitHub desliga agendamentos de repositório público sem commit há 60 dias. Isso só afeta a reserva: o Worker
+  dispara pelo `workflow_dispatch`, que não desliga.
 
 Para gerar e olhar a versão estática localmente: `npm run gerar` (sai em `_site/`).
 
@@ -102,10 +108,16 @@ O token fica só no servidor: o navegador chama `/dados/*` e o servidor fala com
 
 ### Limites do plano Free
 
-- 10 req/min, 2.000/dia, 50 mil/mês. O servidor guarda cache (torneios 30 min, jogos 3 min,
-  ranking 6 h) e segura as chamadas para não passar de 9 por minuto.
+- 10 req/min, 2.000/dia, 50 mil/mês (o consumo aparece na página **Logs & Quota** da Padel API).
+  O servidor e o robô guardam cache (lista de torneios 1 h, ranking 6 h, jogos de torneio em andamento 3 min,
+  de torneio que ainda vai começar 30 min, de torneio encerrado 12 h) e seguram as chamadas para não passar de
+  9 por minuto.
+- Conta do robô de 5 em 5 minutos: com um torneio rolando, cada execução gasta ~3 chamadas (as páginas de jogos
+  dele), mais ~55 por dia de listas e ranking. Dá umas 920 por dia, **~28 mil por mês**. Sem o cache entre
+  execuções seriam 7 a 10 por vez, o que estoura os 2.000 por dia.
 - Resultados só dos últimos 6 meses; ranking só a semana atual.
-- **Sem placar ao vivo**: o placar aparece quando o jogo termina. Ao vivo é no plano Pro.
+- **Sem placar ao vivo**: o placar aparece quando o jogo termina (o site mostra "placar no fim" no jogo ao vivo).
+  Ao vivo é no plano Pro.
 
 ## Torneios no Brasil (aba Brasil)
 
@@ -116,7 +128,8 @@ de SC usam. Não precisa de token.
   Essa "API" devolve **HTML pronto** (é feita para embutir em site de clube), não JSON;
   `src/sportscore.js` lê esse HTML e transforma em JSON. Filtros da fonte: `cat`, `club`, `data`,
   `sit` (1 aberto, 2 confirmado, 3 iniciado, 9 em análise, 10 finalizado). Também existe `api/bracket/?id=&cat=`.
-- **Não é documentada nem oficial**: pode mudar sem aviso. Cache de 2 minutos e no máximo 2 chamadas por torneio.
+- **Não é documentada nem oficial**: pode mudar sem aviso. São 2 chamadas por torneio, com cache de 3 minutos para
+  o torneio que está acontecendo hoje, 1 hora para o que vai começar e 12 horas para o que já acabou.
   Antes de publicar o site, vale pedir autorização/parceria ao SportScore.
 - Sem CORS: só funciona chamando pelo servidor (`/dados/br/*`), nunca direto do navegador.
 - Os torneios acompanhados ficam em `data/torneios-br.json` (ID do SportScore, nome, cidade, datas, links).
