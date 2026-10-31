@@ -50,6 +50,31 @@ export function ColunaHora({ info }: { info: InfoHora }) {
   );
 }
 
+const PARTICULAS = new Set(['da', 'de', 'do', 'das', 'dos', 'e', 'del', 'la', 'di', 'van', 'von']);
+
+// Nome curto para o celular: primeiro nome + sobrenome principal. No circuito mundial (espanhóis e
+// argentinos) o sobrenome conhecido é o primeiro ("Juan Lebron Chincoa" -> "Juan Lebron"); no Brasil,
+// o último ("Bruno Sganzerla Truccolo" -> "Bruno Truccolo")
+export function nomeCurto(nome: string, sobrenome: 'primeiro' | 'ultimo'): string {
+  const partes = nome.trim().split(/\s+/);
+  if (partes.length <= 2) return nome.trim();
+  const resto = partes.slice(1).filter((p) => !PARTICULAS.has(p.toLowerCase()));
+  if (!resto.length) return nome.trim();
+  return `${partes[0]} ${sobrenome === 'primeiro' ? resto[0] : resto[resto.length - 1]}`;
+}
+
+// Nome completo no computador, curto no celular (o completo fica no toque longo / passar o mouse)
+export function NomeJogador({ nome, sobrenome, className }: { nome: string; sobrenome: 'primeiro' | 'ultimo'; className?: string }) {
+  const curto = nomeCurto(nome, sobrenome);
+  if (curto === nome.trim()) return <span className={cn('truncate', className)}>{nome}</span>;
+  return (
+    <span className={cn('truncate', className)} title={nome}>
+      <span className="sm:hidden">{curto}</span>
+      <span className="hidden sm:inline">{nome}</span>
+    </span>
+  );
+}
+
 // Uma dupla: nomes à esquerda, games de cada set à direita
 export function LinhaDupla({
   nomes,
@@ -69,8 +94,9 @@ export function LinhaDupla({
           <span className="flex min-w-0 flex-wrap items-center gap-x-1">
             {nomes.map((n, i) => (
               <span key={i} className="inline-flex min-w-0 items-center gap-1.5 truncate">
-                {i > 0 && <span className="text-muted-foreground">/</span>}
                 {n}
+                {/* barra no fim do primeiro: se quebrar, a linha de baixo começa pelo nome */}
+                {i < nomes.length - 1 && <span className="text-muted-foreground">/</span>}
               </span>
             ))}
             {cabeca && <span className="ml-1 text-[11px] font-normal text-muted-foreground">({cabeca})</span>}

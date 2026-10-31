@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Aviso, CabecalhoTorneio, Canais, Carregando, ColunaHora, LinhaDupla, PlayerYouTube, type InfoHora } from '@/components/partes';
+import { Aviso, CabecalhoTorneio, Canais, Carregando, ColunaHora, LinhaDupla, NomeJogador, PlayerYouTube, type InfoHora } from '@/components/partes';
 import { useDados, type Canal, type JogoBr, type TorneioBr, type TorneioBrDetalhe } from '@/lib/dados';
 import { diaLongo, periodo, rotuloDia, semAcento } from '@/lib/formato';
 import { cn } from '@/lib/utils';
@@ -104,7 +104,7 @@ function infoHoraBr(j: JogoBr): InfoHora {
 
 function Destacar({ nome, busca }: { nome: string; busca: string }) {
   const termo = semAcento(busca).trim();
-  if (!termo || !semAcento(nome).includes(termo)) return <span className="truncate">{nome}</span>;
+  if (!termo || !semAcento(nome).includes(termo)) return <NomeJogador nome={nome} sobrenome="ultimo" />;
   return <mark className="truncate rounded bg-bola px-0.5 text-black">{nome}</mark>;
 }
 

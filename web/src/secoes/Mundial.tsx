@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Aviso, Bandeira, Canais, Carregando, ColunaHora, LinhaDupla, type InfoHora,
+  Aviso, Bandeira, Canais, Carregando, ColunaHora, LinhaDupla, NomeJogador, type InfoHora,
 } from '@/components/partes';
 import { useDados, type Jogo, type LinhaRanking, type Torneio } from '@/lib/dados';
 import { diaISO, diaMes, horaBR, horarioMadriParaData, periodo, rotuloDia } from '@/lib/formato';
@@ -33,7 +33,7 @@ export function LinhaJogo({ jogo: j }: { jogo: Jogo }) {
   const nomes = (d: Jogo['dupla1']) => d.map((p) => (
     <>
       <Bandeira pais={p.pais} />
-      <span className="truncate">{p.nome}</span>
+      <NomeJogador nome={p.nome} sobrenome="primeiro" />
     </>
   ));
   const sets = (lado: 'team_1' | 'team_2') => (j.placar ?? []).map((s) => s[lado]);
