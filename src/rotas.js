@@ -68,12 +68,12 @@ export async function torneiosBrConfigurados() {
   return JSON.parse(await readFile(arquivo, 'utf8')).torneios;
 }
 
-// Torneio acontecendo hoje (ou sem data cadastrada): confere a cada execução do robô.
-// Fora disso, bem menos, para não ficar batendo no SportScore.
+// Torneio acontecendo hoje: confere a cada execução do robô. Fora disso, bem menos, para não
+// ficar batendo no SportScore (sem data cadastrada conta como "ainda vai começar").
 function ttlBr(cfg) {
   const hoje = hojeISO();
   if (cfg.fim && cfg.fim < hoje) return 12 * 60 * 60_000;
-  if (cfg.inicio && cfg.inicio > hoje) return 60 * 60_000;
+  if (!cfg.inicio || cfg.inicio > hoje) return 60 * 60_000;
   return 3 * 60_000;
 }
 
@@ -247,7 +247,8 @@ export function criarRotas(token, guardado = {}) {
       })
       .sort((a, b) => {
         const ordem = { live: 0, pending: 1, finished: 2 };
-        return b.destaque - a.destaque || ordem[a.status] - ordem[b.status] || (a.inicio ?? '').localeCompare(b.inicio ?? '');
+        // sem data ainda vai para o fim
+        return b.destaque - a.destaque || ordem[a.status] - ordem[b.status] || (a.inicio ?? '9999').localeCompare(b.inicio ?? '9999');
       });
   }
 

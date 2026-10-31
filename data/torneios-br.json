@@ -45,6 +45,66 @@
       "ondeAssistir": []
     },
     {
+      "sportscore": 528,
+      "nome": "Muv Arena Porto Belo · 4ª Etapa (Bread King)",
+      "cidade": "Porto Belo/SC",
+      "local": "Muv Arena",
+      "inicio": "2026-12-04",
+      "fim": "2026-12-06",
+      "links": [
+        { "nome": "Inscrições", "url": "https://www.sportscore.com.br/inscricao/528/4-etapa-muv-arena-porto-belo-bread-king-4-a-6-de-dezembro.html" }
+      ],
+      "ondeAssistir": []
+    },
+    {
+      "sportscore": 542,
+      "nome": "Flui Fit Experience",
+      "cidade": "Balneário Camboriú/SC",
+      "local": "Padel Que Eu Quero",
+      "inicio": null,
+      "fim": null,
+      "links": [
+        { "nome": "Inscrições", "url": "https://www.sportscore.com.br/inscricao/542/127934-flui-fit-experience.html" }
+      ],
+      "ondeAssistir": []
+    },
+    {
+      "sportscore": 544,
+      "nome": "Torneio Pais & Filhos · Etapa Valley International School",
+      "cidade": "Itajaí/SC",
+      "local": "EQI Racket Club",
+      "inicio": null,
+      "fim": null,
+      "links": [
+        { "nome": "Inscrições", "url": "https://www.sportscore.com.br/inscricao/544/torneio-pais-filhos-de-padel-etapa-valley-international-school.html" }
+      ],
+      "ondeAssistir": []
+    },
+    {
+      "sportscore": 484,
+      "nome": "4º Torneio Coliseu Complexo Esportivo",
+      "cidade": "SC",
+      "local": "Coliseu Complexo Esportivo",
+      "inicio": null,
+      "fim": null,
+      "links": [
+        { "nome": "Inscrições", "url": "https://www.sportscore.com.br/inscricao/484/4-torneio-coliseu-complexo-esportivo.html" }
+      ],
+      "ondeAssistir": []
+    },
+    {
+      "sportscore": 534,
+      "nome": "3º Padel Fashion Weekend · Fresh Italian",
+      "cidade": "SC",
+      "local": "Padel Só Delas",
+      "inicio": null,
+      "fim": null,
+      "links": [
+        { "nome": "Inscrições", "url": "https://www.sportscore.com.br/inscricao/534/3-padel-fashion-weekend-fresh-italian.html" }
+      ],
+      "ondeAssistir": []
+    },
+    {
       "sportscore": 510,
       "nome": "Circuito Interno Padel Center · 6ª Masculina",
       "cidade": null,
