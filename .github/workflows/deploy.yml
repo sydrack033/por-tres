@@ -51,6 +51,8 @@ jobs:
           PADEL_API_TOKEN: ${{ secrets.PADEL_API_TOKEN }}
           # código do Cloudflare Web Analytics (não é segredo: aparece na página). Vazio = sem analytics
           CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+          # id do site no Umami Cloud (também aparece na página). Vazio = sem Umami
+          UMAMI_WEBSITE_ID: ${{ vars.UMAMI_WEBSITE_ID }}
       - name: Guardar o cache do robô
         uses: actions/cache/save@v6
         with:

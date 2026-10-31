@@ -51,9 +51,12 @@ await cp(FRONT, SAIDA, { recursive: true });
 
 // Cloudflare Web Analytics (grátis, sem cookie): só entra se o código do site estiver configurado
 const beacon = process.env.CF_BEACON_TOKEN?.trim();
-const analytics = beacon
-  ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='${JSON.stringify({ token: beacon })}'></script>`
-  : '';
+// Umami Cloud (grátis, sem cookie): visitantes em tempo real e tempo de visita
+const umami = process.env.UMAMI_WEBSITE_ID?.trim();
+const analytics = [
+  beacon && `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='${JSON.stringify({ token: beacon })}'></script>`,
+  umami && `<script defer src="https://cloud.umami.is/script.js" data-website-id="${umami}"></script>`,
+].filter(Boolean).join('\n    ');
 
 // O front lê a marca "estatico" para buscar dados/*.json em vez de /dados/*.
 // (JS e CSS já saem do Vite com hash no nome, então cada deploy chega na hora.)
@@ -64,7 +67,7 @@ await writeFile(
     .replace('content="servidor"', 'content="estatico"')
     .replace('<!-- ANALYTICS -->', analytics),
 );
-console.log(beacon ? 'analytics: Cloudflare ligado' : 'analytics: desligado (sem CF_BEACON_TOKEN)');
+console.log(`analytics: Cloudflare ${beacon ? 'ligado' : 'desligado'}, Umami ${umami ? 'ligado' : 'desligado'}`);
 
 async function gravar(arquivo, conteudo) {
   const destino = join(SAIDA, arquivo);

@@ -67,6 +67,13 @@ Grátis, sem cookie (não precisa de banner) e funciona no Pages. Para ligar:
 
 Sem a variável, o site sai sem analytics nenhum.
 
+### Umami (pessoas online agora e tempo de visita)
+
+O Cloudflare só conta visitas. O Umami Cloud (plano grátis, sem cookie) mostra também quem está no site agora
+(**Realtime**) e quanto tempo dura cada visita. Para ligar: cria a conta em https://cloud.umami.is, adiciona o site
+`portres.com.br`, copia o **Website ID** e grava na variável `UMAMI_WEBSITE_ID` do repositório
+(`gh variable set UMAMI_WEBSITE_ID -R sydrack033/por-tres`). Não é segredo: aparece no HTML.
+
 ## Rodar
 
 Precisa de Node 20 ou mais novo.
