@@ -87,6 +87,7 @@ export type TorneioBr = {
   destaque: boolean;
   premio: string | null;
   links: { nome: string; url: string }[];
+  ondeAssistir: Canal[];
   publicado: boolean;
   status: 'live' | 'pending' | 'finished';
   jogos: { live: number; scheduled: number; finished: number };

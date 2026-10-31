@@ -120,6 +120,36 @@ export function Canais({ canais }: { canais: Canal[] }) {
   );
 }
 
+// Vídeo do YouTube (watch?v=, youtu.be/, /live/, /embed/): devolve o id, ou null se não for
+export function idYouTube(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'youtu.be') return u.pathname.slice(1) || null;
+    if (!/(^|\.)youtube\.com$/.test(u.hostname)) return null;
+    return u.searchParams.get('v') ?? u.pathname.match(/^\/(?:live|embed)\/([\w-]+)/)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Transmissão no YouTube tocando no próprio site (sem cookie até dar play)
+export function PlayerYouTube({ canais }: { canais: Canal[] }) {
+  const canal = canais.find((c) => idYouTube(c.url));
+  if (!canal) return null;
+  return (
+    <div className="overflow-hidden rounded-xl border bg-black">
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${idYouTube(canal.url)}?rel=0`}
+        title={`Transmissão: ${canal.nome}`}
+        className="aspect-video w-full"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+        loading="lazy"
+      />
+    </div>
+  );
+}
+
 const NIVEIS: Record<string, string> = {
   major: 'Major', p1: 'P1', p2: 'P2', finals: 'Finals', fip_platinum: 'FIP Platinum', fip_gold: 'FIP Gold',
 };

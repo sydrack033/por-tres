@@ -151,6 +151,9 @@ de SC usam. Não precisa de token.
 - Sem CORS: só funciona chamando pelo servidor (`/dados/br/*`), nunca direto do navegador.
 - Os torneios acompanhados ficam em `data/torneios-br.json` (ID do SportScore, nome, cidade, datas, links).
   Para incluir um torneio novo, pega o número na URL do SportScore (`/timeline/{id}/...`) e adiciona lá.
+- Transmissão: `ondeAssistir` do torneio em `data/torneios-br.json` (mesmo formato dos canais: `id`, `nome`, `tipo`,
+  `url`). Aparece nos jogos que ainda vão acontecer e, se for vídeo do YouTube, vira um player na tela do torneio
+  (só se o canal permitir incorporar o vídeo).
 - Torneio com inscrição aberta e tabela ainda não gerada aparece como "Tabela de jogos ainda não publicada".
 - Na tela do torneio: filtro por categoria, situação (em quadra, próximos, encerrados) e busca pelo nome do jogador.
 

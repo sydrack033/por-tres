@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Aviso, CabecalhoTorneio, Carregando, ColunaHora, LinhaDupla, type InfoHora } from '@/components/partes';
-import { useDados, type JogoBr, type TorneioBr, type TorneioBrDetalhe } from '@/lib/dados';
+import { Aviso, CabecalhoTorneio, Canais, Carregando, ColunaHora, LinhaDupla, PlayerYouTube, type InfoHora } from '@/components/partes';
+import { useDados, type Canal, type JogoBr, type TorneioBr, type TorneioBrDetalhe } from '@/lib/dados';
 import { diaLongo, periodo, rotuloDia, semAcento } from '@/lib/formato';
 import { cn } from '@/lib/utils';
 
@@ -108,8 +108,9 @@ function Destacar({ nome, busca }: { nome: string; busca: string }) {
   return <mark className="truncate rounded bg-bola px-0.5 text-black">{nome}</mark>;
 }
 
-export function LinhaJogoBr({ jogo: j, busca = '' }: { jogo: JogoBr; busca?: string }) {
+export function LinhaJogoBr({ jogo: j, busca = '', canais = [] }: { jogo: JogoBr; busca?: string; canais?: Canal[] }) {
   const nomes = (d: JogoBr['dupla1']) => d.jogadores.map((n) => <Destacar nome={n} busca={busca} />);
+  const aindaVai = j.status === 'scheduled' || j.status === 'live';
   return (
     <div className="flex gap-3 px-4 py-3 sm:gap-4">
       <ColunaHora info={infoHoraBr(j)} />
@@ -118,7 +119,7 @@ export function LinhaJogoBr({ jogo: j, busca = '' }: { jogo: JogoBr; busca?: str
         <LinhaDupla nomes={nomes(j.dupla2)} sets={j.dupla2.sets} venceu={j.vencedor === 2} />
         <div className="flex flex-wrap justify-between gap-x-3 pt-1 text-xs text-muted-foreground">
           <span>{[j.categoria, j.chave && `Chave ${j.chave}`, j.quadra ? `Quadra ${j.quadra}` : j.clube].filter(Boolean).join(' · ')}</span>
-          <span>{[j.duracao, `Jogo ${j.id}`].filter(Boolean).join(' · ')}</span>
+          {aindaVai && canais.length > 0 ? <Canais canais={canais} /> : <span>{[j.duracao, `Jogo ${j.id}`].filter(Boolean).join(' · ')}</span>}
         </div>
       </div>
     </div>
@@ -163,7 +164,10 @@ function TorneioBrView({ id, onVoltar }: { id: number; onVoltar: () => void }) {
       <div className="space-y-2">
         <CabecalhoTorneio nome={t.nome} pais="BR" local={[t.cidade, t.local].filter(Boolean).join(' · ')} inicio={t.inicio} fim={t.fim} extra={<SeloStatus status={t.status} />} />
         <Links links={t.links} />
+        <Canais canais={t.ondeAssistir} />
       </div>
+
+      {t.status !== 'finished' && <PlayerYouTube canais={t.ondeAssistir} />}
 
       <div className="flex flex-col gap-2 rounded-xl border bg-card p-3 md:flex-row md:items-center">
         <div className="relative md:flex-1">

@@ -86,7 +86,7 @@ function montarGrupos(dados: JogosPeriodo, dia: string, categoria: Categoria): G
         id: j.id,
         vivo: j.status === 'live',
         ordem: j.hora ? Number(j.hora.replace(':', '')) : Number.MAX_SAFE_INTEGER,
-        elemento: <LinhaJogoBr jogo={j} />,
+        elemento: <LinhaJogoBr jogo={j} canais={t.ondeAssistir} />,
       })),
     });
   }
