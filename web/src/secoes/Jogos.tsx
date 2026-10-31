@@ -1,14 +1,19 @@
 // Aba Jogos (estilo SofaScore): escolhe o dia na faixa de datas ou no calendário e vê os jogos
 // daquele dia separados por campeonato, cada um podendo recolher/expandir.
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Star } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Seguir } from '@/components/acoes';
+import { inicioBr } from '@/lib/compartilhar';
+import { irPara } from '@/lib/rota';
+import { chaveTorneio, useSeguindo } from '@/lib/seguindo';
 import { ptBR } from 'react-day-picker/locale';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Aviso, Bandeira, Carregando } from '@/components/partes';
-import { LinhaJogo, type Categoria } from '@/secoes/Mundial';
+import { diaMundial, ENCERRADO, idJogoMundial, LinhaJogo, type Categoria } from '@/secoes/Mundial';
 import { LinhaJogoBr } from '@/secoes/Brasil';
 import { useDados, type Jogo, type JogoBr, type JogosPeriodo } from '@/lib/dados';
 import { dataSemFuso, diaISO, diaLongo, horarioMadriParaData, periodo, rotuloDia } from '@/lib/formato';
@@ -32,11 +37,17 @@ const localParaIso = (d: Date) =>
 const fmtSemana = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', weekday: 'short' });
 const fmtNumero = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' });
 
-// dia de cada jogo no horário de Brasília
-const diaMundial = (j: Jogo) => {
-  const quando = horarioMadriParaData(j.horarioMadri);
-  return quando ? diaISO(quando) : j.data;
-};
+// ---------- filtros ----------
+
+export type FiltroJogos = 'todos' | 'vivo' | 'proximos' | 'encerrados' | 'meus';
+// "Meus" logo depois de Todos: no celular os últimos ficam para rolar de lado
+const FILTROS: [FiltroJogos, string][] = [['todos', 'Todos'], ['meus', 'Meus'], ['vivo', 'Ao vivo'], ['proximos', 'Próximos'], ['encerrados', 'Encerrados']];
+type Situacao = 'vivo' | 'proximos' | 'encerrados';
+
+const situacaoMundial = (j: Jogo): Situacao => (j.status === 'live' ? 'vivo' : ENCERRADO.includes(j.status) ? 'encerrados' : 'proximos');
+const situacaoBr = (j: JogoBr): Situacao => (j.status === 'live' ? 'vivo' : j.status === 'finished' ? 'encerrados' : 'proximos');
+
+type Seguindo = ReturnType<typeof useSeguindo>;
 
 // ---------- grupos (um por campeonato) ----------
 
@@ -58,35 +69,67 @@ const PESO_NIVEL: Record<string, number> = { major: 0, finals: 1, p1: 2, p2: 3, 
 const generoBr = (categoria: string | null): Categoria =>
   /femin/i.test(categoria ?? '') ? 'women' : /mascul/i.test(categoria ?? '') ? 'men' : 'todos';
 
-function montarGrupos(dados: JogosPeriodo, dia: string, categoria: Categoria): Grupo[] {
+const nomesMundial = (j: Jogo) => [...j.dupla1, ...j.dupla2].map((p) => p.nome);
+const nomesBr = (j: JogoBr) => [...j.dupla1.jogadores, ...j.dupla2.jogadores];
+
+// O jogo que veio por link direto ganha um fundo por uns segundos
+function LinhaMundial({ jogo, aceso }: { jogo: Jogo; aceso: boolean }) {
+  return (
+    <div id={`jogo-${idJogoMundial(jogo)}`} className={cn('scroll-mt-40 transition-colors duration-1000', aceso && 'bg-bola/15')}>
+      <LinhaJogo jogo={jogo} />
+    </div>
+  );
+}
+
+function montarGrupos(
+  dados: JogosPeriodo, dia: string, categoria: Categoria, filtro: FiltroJogos, seguindo: Seguindo, aceso?: string,
+): Grupo[] {
   const grupos = new Map<string, Grupo>();
+  const passa = (situacao: Situacao, meu: boolean) =>
+    filtro === 'todos' || (filtro === 'meus' ? meu : situacao === filtro);
 
   for (const j of dados.mundial) {
     if (diaMundial(j) !== dia) continue;
     if (categoria !== 'todos' && j.categoria !== categoria) continue;
     if (!j.dupla1.length && !j.dupla2.length) continue; // rodada ainda sem dupla
     const t = j.torneio;
-    const chave = `m-${t.id}`;
+    const chave = chaveTorneio('m', t.id);
+    if (!passa(situacaoMundial(j), seguindo.jogoMeu(chave, nomesMundial(j)))) continue;
     if (!grupos.has(chave)) {
       grupos.set(chave, { chave, nome: t.nome, nivel: t.nivel, pais: t.pais, local: t.cidade, inicio: t.inicio, fim: t.fim, peso: PESO_NIVEL[t.nivel] ?? 6, linhas: [] });
     }
     const vivo = j.status === 'live';
     const ordem = horarioMadriParaData(j.horarioMadri)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-    grupos.get(chave)!.linhas.push({ id: String(j.id), vivo, ordem, elemento: <LinhaJogo jogo={j} /> });
+    grupos.get(chave)!.linhas.push({ id: String(j.id), vivo, ordem, elemento: <LinhaMundial jogo={j} aceso={aceso === idJogoMundial(j)} /> });
   }
 
   for (const { torneio: t, jogos } of dados.brasil) {
-    const doDia = jogos.filter((j: JogoBr) => j.data === dia && (categoria === 'todos' || generoBr(j.categoria) === categoria));
+    const chave = chaveTorneio('br', t.id);
+    const doDia = jogos.filter(
+      (j: JogoBr) =>
+        j.data === dia &&
+        (categoria === 'todos' || generoBr(j.categoria) === categoria) &&
+        passa(situacaoBr(j), seguindo.jogoMeu(chave, nomesBr(j))),
+    );
     if (!doDia.length) continue;
-    const chave = `br-${t.id}`;
+    const local = [t.cidade, t.local].filter(Boolean).join(' · ');
     grupos.set(chave, {
-      chave, nome: t.nome, pais: 'BR', local: [t.cidade, t.local].filter(Boolean).join(' · '), inicio: t.inicio, fim: t.fim,
+      chave, nome: t.nome, pais: 'BR', local, inicio: t.inicio, fim: t.fim,
       peso: t.destaque ? 3.5 : 7,
       linhas: doDia.map((j) => ({
         id: j.id,
         vivo: j.status === 'live',
         ordem: j.hora ? Number(j.hora.replace(':', '')) : Number.MAX_SAFE_INTEGER,
-        elemento: <LinhaJogoBr jogo={j} canais={t.ondeAssistir} torneio={t.nome} />,
+        elemento: (
+          <LinhaJogoBr
+            jogo={j}
+            canais={t.ondeAssistir}
+            torneio={t.nome}
+            torneioId={t.id}
+            local={local}
+            destaque={aceso === `br-${t.id}-${j.id}`}
+          />
+        ),
       })),
     });
   }
@@ -206,14 +249,16 @@ function FaixaDatas({
 }
 
 function GrupoCampeonato({ grupo, recolhido, onAlternar }: { grupo: Grupo; recolhido: boolean; onAlternar: () => void }) {
+  const seguindo = useSeguindo();
   const aoVivo = grupo.linhas.filter((l) => l.vivo).length;
   return (
     <Card className="gap-0 overflow-hidden py-0">
+      <div className="flex items-center bg-muted/40 pr-3 transition-colors hover:bg-muted/70">
       <button
         type="button"
         onClick={onAlternar}
         aria-expanded={!recolhido}
-        className="flex w-full items-center gap-3 bg-muted/40 px-4 py-2.5 text-left transition-colors hover:bg-muted/70"
+        className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-4 pr-2 text-left"
       >
         <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition-transform', recolhido && '-rotate-90')} />
         <Bandeira pais={grupo.pais} />
@@ -232,6 +277,13 @@ function GrupoCampeonato({ grupo, recolhido, onAlternar }: { grupo: Grupo; recol
           {grupo.linhas.length} {grupo.linhas.length === 1 ? 'jogo' : 'jogos'}
         </span>
       </button>
+      <Seguir
+        tipo="torneio"
+        rotulo={grupo.nome}
+        ativo={seguindo.segueTorneio(grupo.chave)}
+        onAlternar={() => seguindo.alternarTorneio(grupo.chave)}
+      />
+      </div>
       {!recolhido && (
         <div className="divide-y border-t">
           {grupo.linhas.map((l) => <div key={l.id}>{l.elemento}</div>)}
@@ -241,13 +293,85 @@ function GrupoCampeonato({ grupo, recolhido, onAlternar }: { grupo: Grupo; recol
   );
 }
 
-export function AbaJogos({ categoria }: { categoria: Categoria }) {
+// Teu próximo jogo: o primeiro em quadra ou por vir, em qualquer dia, de quem a pessoa segue (jogadores)
+function ProximoJogo({ dados, seguindo, onIr }: { dados: JogosPeriodo; seguindo: Seguindo; onIr: (dia: string, jogo: string) => void }) {
+  type Candidato = { quando: number; vivo: boolean; dia: string; jogo: string; elemento: React.ReactNode; torneio: string };
+  const candidatos: Candidato[] = [];
+  for (const j of dados.mundial) {
+    if (situacaoMundial(j) === 'encerrados' || !nomesMundial(j).some(seguindo.segueJogador)) continue;
+    const dia = diaMundial(j);
+    if (!dia) continue;
+    const quando = horarioMadriParaData(j.horarioMadri)?.getTime() ?? dataSemFuso(dia).getTime();
+    candidatos.push({ quando, vivo: j.status === 'live', dia, jogo: idJogoMundial(j), torneio: j.torneio.nome, elemento: <LinhaJogo jogo={j} /> });
+  }
+  for (const { torneio: t, jogos } of dados.brasil) {
+    for (const j of jogos) {
+      if (situacaoBr(j) === 'encerrados' || !j.data || !nomesBr(j).some(seguindo.segueJogador)) continue;
+      const quando = inicioBr(j.data, j.hora ?? '23:59')?.getTime() ?? 0;
+      candidatos.push({
+        quando, vivo: j.status === 'live', dia: j.data, jogo: `br-${t.id}-${j.id}`, torneio: t.nome,
+        elemento: <LinhaJogoBr jogo={j} canais={t.ondeAssistir} torneio={t.nome} torneioId={t.id} local={[t.cidade, t.local].filter(Boolean).join(' · ')} ancora={false} />,
+      });
+    }
+  }
+  const proximo = candidatos.sort((a, b) => Number(b.vivo) - Number(a.vivo) || a.quando - b.quando)[0];
+  if (!proximo) return null;
+  return (
+    <section className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-2 px-1">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">Teu próximo jogo</h3>
+        <button type="button" onClick={() => onIr(proximo.dia, proximo.jogo)} className="truncate text-xs text-muted-foreground hover:text-foreground">
+          {proximo.torneio} · ver no dia
+        </button>
+      </div>
+      <Card className="gap-0 overflow-hidden border-primary/40 py-0">{proximo.elemento}</Card>
+    </section>
+  );
+}
+
+function FiltroSituacao({ valor, onMudar }: { valor: FiltroJogos; onMudar: (f: FiltroJogos) => void }) {
+  return (
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      value={valor}
+      onValueChange={(v) => v && onMudar(v as FiltroJogos)}
+      className="w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {FILTROS.map(([v, r]) => (
+        <ToggleGroupItem key={v} value={v} className="flex-none px-2.5 sm:px-3">
+          {v === 'vivo' && <span className="size-1.5 rounded-full bg-vivo" />}
+          {v === 'meus' && <Star className="size-3.5" />}
+          {r}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  );
+}
+
+// dia e jogo vêm do endereço (#/jogos/2026-10-31/j/m-123): link direto e Voltar do celular
+export function AbaJogos({ categoria, dia, jogo }: { categoria: Categoria; dia?: string; jogo?: string }) {
   const { data, isPending, error } = useDados<JogosPeriodo>('/jogos', undefined, { aoVivo: true });
-  const [dia, setDia] = useState<string | null>(null);
   const { recolhidos, alternar, definir } = useRecolhidos();
+  const seguindo = useSeguindo();
+  const [filtro, setFiltro] = useState<FiltroJogos>('todos');
+  const [aceso, setAceso] = useState<string | undefined>(jogo);
 
   const hoje = data?.hoje ?? diaISO(new Date());
   const diaEscolhido = dia ?? hoje;
+  const setDia = (d: string) => irPara({ aba: 'jogos', dia: d === hoje ? undefined : d });
+  const irAoJogo = (d: string, j: string) => irPara({ aba: 'jogos', dia: d, jogo: j }, { empilhar: true });
+
+  // Jogo do link: abre o campeonato dele se estava recolhido, rola até ele e acende por uns segundos
+  useEffect(() => {
+    if (!jogo || !data) return;
+    setAceso(jogo);
+    setFiltro('todos');
+    const id = setTimeout(() => document.getElementById(`jogo-${jogo}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
+    const apaga = setTimeout(() => setAceso(undefined), 4000);
+    return () => { clearTimeout(id); clearTimeout(apaga); };
+  }, [jogo, data]);
 
   const diasComJogo = useMemo(() => {
     const dias = new Set<string>();
@@ -260,7 +384,8 @@ export function AbaJogos({ categoria }: { categoria: Categoria }) {
     return dias;
   }, [data]);
 
-  const grupos = useMemo(() => (data ? montarGrupos(data, diaEscolhido, categoria) : []), [data, diaEscolhido, categoria]);
+  // (sem useMemo: o "seguindo" muda a cada estrela e a conta é pequena)
+  const grupos = data ? montarGrupos(data, diaEscolhido, categoria, filtro, seguindo, aceso) : [];
 
   if (isPending) return <Carregando />;
   if (error) return <Aviso tipo="erro">Não consegui carregar os jogos: {error.message}</Aviso>;
@@ -268,10 +393,14 @@ export function AbaJogos({ categoria }: { categoria: Categoria }) {
   const proximoComJogo = [...diasComJogo].filter((d) => d > diaEscolhido).sort()[0];
   const anteriorComJogo = [...diasComJogo].filter((d) => d < diaEscolhido).sort().at(-1);
   const todosRecolhidos = grupos.length > 0 && grupos.every((g) => recolhidos.has(g.chave));
+  // o campeonato do jogo do link aparece aberto mesmo que a pessoa tenha recolhido
+  const estaRecolhido = (g: Grupo) => recolhidos.has(g.chave) && !(aceso && g.linhas.some((l) => aceso.endsWith(`-${l.id}`)));
 
   return (
     <div className="space-y-4">
+      <ProximoJogo dados={data} seguindo={seguindo} onIr={irAoJogo} />
       <FaixaDatas dia={diaEscolhido} hoje={hoje} diasComJogo={diasComJogo} onEscolher={setDia} de={data.de} ate={data.ate} />
+      <FiltroSituacao valor={filtro} onMudar={setFiltro} />
 
       <div className="flex items-center justify-between gap-2 px-1">
         <h2 className="text-sm font-semibold first-letter:uppercase">
@@ -291,7 +420,17 @@ export function AbaJogos({ categoria }: { categoria: Categoria }) {
         )}
       </div>
 
-      {grupos.length === 0 ? (
+      {grupos.length === 0 && filtro === 'meus' && !seguindo.algum ? (
+        <Aviso>
+          Toca na ☆ ao lado de uma dupla ou de um campeonato para seguir. Os jogos deles aparecem aqui, e o próximo
+          jogo de quem tu segue fica no topo da aba.
+        </Aviso>
+      ) : grupos.length === 0 && filtro !== 'todos' ? (
+        <Aviso>
+          <span>Nenhum jogo {FILTROS.find(([v]) => v === filtro)?.[1].toLowerCase()} neste dia.</span>
+          <Button variant="outline" size="sm" onClick={() => setFiltro('todos')}>Ver todos</Button>
+        </Aviso>
+      ) : grupos.length === 0 ? (
         <Aviso>
           <span>Nenhum jogo neste dia{categoria !== 'todos' ? ' nessa categoria' : ''}.</span>
           <span className="flex flex-wrap justify-center gap-2 pt-1">
@@ -310,7 +449,7 @@ export function AbaJogos({ categoria }: { categoria: Categoria }) {
       ) : (
         <div className="space-y-3">
           {grupos.map((g) => (
-            <GrupoCampeonato key={g.chave} grupo={g} recolhido={recolhidos.has(g.chave)} onAlternar={() => alternar(g.chave)} />
+            <GrupoCampeonato key={g.chave} grupo={g} recolhido={estaRecolhido(g)} onAlternar={() => alternar(g.chave)} />
           ))}
         </div>
       )}

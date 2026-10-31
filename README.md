@@ -175,6 +175,32 @@ de SC usam. Não precisa de token.
 - Torneio com inscrição aberta e tabela ainda não gerada aparece como "Tabela de jogos ainda não publicada".
 - Na tela do torneio: filtro por categoria, situação (em quadra, próximos, encerrados) e busca pelo nome do jogador.
 
+### Busca de torneios (Worker `api/`)
+
+No topo da aba Brasil tem um campo de busca. Ele filtra na hora a lista (nome, cidade e local, sem acento nem
+maiúscula) e, a partir de 3 letras, procura também no SportScore os torneios que **não** estão na lista
+("Outros torneios no SportScore"). Clicar num deles abre a mesma tela de torneio, com os dados buscados na hora
+(não grava nada na lista).
+
+- Como o navegador não chama o SportScore (sem CORS), quem busca é o Worker `api/` (`por-tres-api`), com o mesmo
+  parser do gerador (`src/sportscore.js` + `src/brasil.js`):
+  - `GET /br/buscar?q=termo` → `[{ id, titulo, organizador, temTabela, url }]`. Usa o form da página
+    `sportscore.com.br/torneios` ("Buscar por título ou local"): `/index.php?pagina=torneio&busca=<termo>`,
+    10 por página, seguintes com `&id=,2`, `&id=,3`... Lê até 5 páginas, uma de cada vez.
+  - `GET /br/torneio?id=497` → mesmo formato de `dados/br/torneio-<id>.json`.
+  - CORS só para `portres.com.br` e `localhost`. Cache de 10 min na busca e 3 min no torneio.
+- Quem tira da resposta os torneios que já estão na lista é o front.
+- Umami: `busca-br` (`termo`, `naLista`, `noSportScore`, quando a pessoa para de digitar) e
+  `torneio-externo-aberto` (`id`, `titulo`). É o que mostra o que o pessoal procura, para decidir o que incluir.
+- Endereço do Worker no front: `VITE_API_URL` no build (no Actions vem da variável `API_URL` do repositório) ou
+  `<meta name="api-url" content="...">` no `index.html`. Sem nenhum dos dois (ou com o Worker fora do ar), a busca
+  na lista funciona igual e a seção do SportScore some.
+
+Para publicar (uma vez): `cd api && npm install && npx wrangler login && npx wrangler deploy`; o deploy mostra o
+endereço `https://por-tres-api.<conta>.workers.dev`. Grava esse endereço na variável `API_URL`
+(`gh variable set API_URL -R sydrack033/por-tres`) e roda o workflow. Para testar local: `cd api && npx wrangler dev`
+(porta 8787) e compila o front com `VITE_API_URL=http://127.0.0.1:8787`.
+
 ## Onde assistir
 
 `data/onde-assistir.json` tem:
@@ -193,8 +219,10 @@ O arquivo é relido a cada requisição, então não precisa reiniciar depois de
 | `server.js` | servidor HTTP: front compilado (`web/dist`) + rotas `/dados/*` |
 | `src/rotas.js` | monta cada rota `/dados/*` (usado pelo servidor e pelo gerador) |
 | `src/fonte.js` | Padel API (cache + limitador) ou `data/demo.json` |
-| `src/sportscore.js` | lê a timeline do SportScore e transforma em JSON |
+| `src/sportscore.js` | lê a timeline e a busca de torneios do SportScore e transforma em JSON |
+| `src/brasil.js` | resumo e jogos de torneio do Brasil (usado pelas rotas e pelo Worker `api/`) |
 | `src/transmissao.js` | aplica as regras de onde assistir |
 | `scripts/gerar-site.js` | gera a versão estática para o Pages |
 | `gatilho/` | Worker do Cloudflare que dispara o robô de 5 em 5 minutos |
+| `api/` | Worker do Cloudflare com a busca de torneios do SportScore (aba Brasil) |
 | `web/` | o site (React + Tailwind + shadcn/ui) |

@@ -37,6 +37,9 @@ jobs:
         run: |
           npm ci --prefix web
           npm run build --prefix web
+        env:
+          # endereço do Worker api/ (busca de torneios no SportScore). Vazio = só a busca na lista
+          VITE_API_URL: ${{ vars.API_URL }}
       # Cache das fontes de uma execução para a outra: só busca de novo o que pode ter mudado.
       # A chave muda a cada execução; o restore pega a mais recente que começa com "robo-".
       - name: Recuperar o cache do robô

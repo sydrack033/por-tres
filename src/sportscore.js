@@ -58,11 +58,19 @@ async function buscarHtml(url, ttl = TTL_MS) {
 
 const ENTIDADES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&nbsp;': ' ' };
 
+// "&#127934;" (emoji no título) e "&#x27;"
+function numerica(e) {
+  const m = e.match(/^&#(x?)([0-9a-f]+);$/i);
+  if (!m) return null;
+  const codigo = parseInt(m[2], m[1] ? 16 : 10);
+  return codigo > 0 && codigo <= 0x10ffff ? String.fromCodePoint(codigo) : null;
+}
+
 function texto(html) {
   return html
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<[^>]+>/g, '')
-    .replace(/&[a-z#0-9]+;/gi, (e) => ENTIDADES[e] ?? e)
+    .replace(/&[a-z#0-9]+;/gi, (e) => ENTIDADES[e] ?? numerica(e) ?? e)
     .replace(/[ \t]+/g, ' ')
     .trim();
 }
@@ -167,4 +175,49 @@ export async function torneioSportScore(id, { anoReferencia, ttl } = {}) {
     datas: opcoesDoSelect(html, 'cbo_data'),
     jogos,
   };
+}
+
+// ---------- busca de torneios (listagem do site, não da API) ----------
+// A página www.sportscore.com.br/torneios tem o campo "Buscar por título ou local": é um form GET
+// para /index.php?pagina=torneio&busca=<termo>, 10 torneios por página, e as seguintes vêm com
+// &id=,2 / &id=,3... A busca deles já ignora acento e maiúscula.
+const SITE = 'https://www.sportscore.com.br';
+const POR_PAGINA = 10;
+
+const urlBusca = (termo, pagina) =>
+  `${SITE}/index.php?pagina=torneio&busca=${encodeURIComponent(termo)}${pagina > 1 ? `&id=,${pagina}` : ''}`;
+
+// Cada torneio é um card: título no <h5>, organizador/local no .endereco e os botões
+// (INSCRIÇÃO, INSCRITOS, CHAVES, TIMELINE) com o número do torneio na URL.
+// Com TIMELINE é porque a tabela de jogos já saiu.
+function lerCards(html) {
+  return html
+    .split(/<div class="card mb-4[^"]*">/)
+    .slice(1)
+    .map((card) => {
+      const links = [...card.matchAll(/href="(https?:\/\/[^"]*\/(inscricao|lista-inscritos|chaves|timeline)\/(\d+)\/[^"]*)"/g)];
+      if (!links.length) return null;
+      const timeline = links.find(([, , tipo]) => tipo === 'timeline');
+      return {
+        id: Number(links[0][3]),
+        titulo: texto(card.match(/<h5>([\s\S]*?)<\/h5>/)?.[1] ?? ''),
+        organizador: texto(card.match(/<div class="endereco[^"]*">([\s\S]*?)<\/div>/)?.[1] ?? '') || null,
+        temTabela: !!timeline,
+        url: (timeline ?? links[0])[1],
+      };
+    })
+    .filter(Boolean);
+}
+
+// Lê no máximo `paginas` páginas, uma de cada vez (nada de rajada no site deles)
+export async function buscarTorneiosSportScore(termo, { paginas = 5, ttl = 10 * 60_000 } = {}) {
+  const achados = new Map();
+  for (let pagina = 1; pagina <= paginas; pagina++) {
+    const html = await buscarHtml(urlBusca(termo, pagina), ttl);
+    const cards = lerCards(html);
+    for (const c of cards) if (!achados.has(c.id)) achados.set(c.id, c);
+    // página incompleta ou sem link para a próxima: acabou
+    if (cards.length < POR_PAGINA || !html.includes(`id=,${pagina + 1}`)) break;
+  }
+  return [...achados.values()];
 }

@@ -3,8 +3,11 @@ import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Aviso, Bandeira, Canais, Carregando, ColunaHora, LinhaDupla, NomeJogador, type InfoHora,
+  Aviso, Bandeira, Canais, Carregando, ColunaHora, LinhaDupla, NomeJogador, nomeCurto, type InfoHora,
 } from '@/components/partes';
+import { MenuAcoes, Seguir } from '@/components/acoes';
+import { useSeguindo } from '@/lib/seguindo';
+import { linkDaRota } from '@/lib/rota';
 import { useDados, type Jogo, type LinhaRanking, type Torneio } from '@/lib/dados';
 import { diaISO, diaMes, horaBR, horarioMadriParaData, periodo, rotuloDia } from '@/lib/formato';
 
@@ -12,7 +15,7 @@ export type Categoria = 'todos' | 'men' | 'women';
 
 export const RODADAS: Record<number, string> = { 0: 'Fase de grupos', 1: 'Final', 2: 'Semifinal', 4: 'Quartas', 8: 'Oitavas', 16: 'Rodada de 32', 32: 'Rodada de 64' };
 const CATEGORIAS = { men: 'Masculino', women: 'Feminino' } as const;
-const ENCERRADO = ['finished', 'ended', 'retired', 'walkover'];
+export const ENCERRADO = ['finished', 'ended', 'retired', 'walkover'];
 
 function infoHora(j: Jogo): InfoHora {
   // O plano grátis da Padel API não tem placar ao vivo: ele só chega quando o jogo acaba
@@ -28,7 +31,33 @@ function infoHora(j: Jogo): InfoHora {
   return { tipo: 'indefinido', hora: '—', dia: rotuloDia(j.data), nota: 'a definir' };
 }
 
+// Dia do jogo no horário de Brasília (a Padel API manda o de Madri)
+export const diaMundial = (j: Jogo) => {
+  const quando = horarioMadriParaData(j.horarioMadri);
+  return quando ? diaISO(quando) : j.data;
+};
+
+export const idJogoMundial = (j: Jogo) => `m-${j.id}`;
+const nomesDupla = (d: Jogo['dupla1']) => d.map((p) => p.nome);
+
+// Mensagem do "Mandar no grupo": quem joga, onde e o placar ou o horário
+function textoJogo(j: Jogo) {
+  const dupla = (d: Jogo['dupla1']) => d.map((p) => nomeCurto(p.nome, 'primeiro')).join(' / ') || 'A definir';
+  const quando = horarioMadriParaData(j.horarioMadri);
+  const placar = (j.placar ?? []).map((s) => `${s.team_1}-${s.team_2}`).join(' ');
+  const situacao = ENCERRADO.includes(j.status)
+    ? `Resultado: ${placar || 'encerrado'}`
+    : j.status === 'live'
+      ? 'Em quadra agora'
+      : quando
+        ? `${rotuloDia(diaISO(quando))} às ${horaBR(quando)} (Brasília)`
+        : 'Horário a definir';
+  const assistir = j.ondeAssistir.length && !ENCERRADO.includes(j.status) ? `\n📺 ${j.ondeAssistir.map((c) => c.nome).join(', ')}` : '';
+  return `🎾 ${j.torneio.nome} · ${RODADAS[j.rodada] ?? j.nomeRodada} ${CATEGORIAS[j.categoria].toLowerCase()}\n${dupla(j.dupla1)} x ${dupla(j.dupla2)}\n${situacao}${assistir}`;
+}
+
 export function LinhaJogo({ jogo: j }: { jogo: Jogo }) {
+  const seguindo = useSeguindo();
   const aindaVai = j.status === 'scheduled' || j.status === 'live';
   const nomes = (d: Jogo['dupla1']) => d.map((p) => (
     <>
@@ -37,16 +66,46 @@ export function LinhaJogo({ jogo: j }: { jogo: Jogo }) {
     </>
   ));
   const sets = (lado: 'team_1' | 'team_2') => (j.placar ?? []).map((s) => s[lado]);
+  const estrela = (d: Jogo['dupla1']) =>
+    d.length > 0 && (
+      <Seguir
+        tipo="dupla"
+        rotulo={nomesDupla(d).join(' / ')}
+        ativo={seguindo.segueDupla(nomesDupla(d))}
+        onAlternar={() => seguindo.alternarDupla(nomesDupla(d))}
+        className="-ml-1.5 -mr-1"
+      />
+    );
+  const quando = horarioMadriParaData(j.horarioMadri);
+  const agenda = j.status === 'scheduled' && quando
+    ? [{
+        id: idJogoMundial(j),
+        inicio: quando,
+        titulo: `${nomesDupla(j.dupla1).map((n) => nomeCurto(n, 'primeiro')).join('/')} x ${nomesDupla(j.dupla2).map((n) => nomeCurto(n, 'primeiro')).join('/')}`,
+        local: [j.torneio.nome, j.quadra].filter(Boolean).join(' · '),
+        descricao: textoJogo(j),
+        link: linkDaRota({ aba: 'jogos', dia: diaMundial(j) ?? undefined, jogo: idJogoMundial(j) }),
+      }]
+    : undefined;
   return (
     <div className="flex gap-3 px-4 py-3 sm:gap-4">
       <ColunaHora info={infoHora(j)} />
       <div className="min-w-0 flex-1 space-y-1">
-        <LinhaDupla nomes={nomes(j.dupla1)} sets={sets('team_1')} venceu={j.vencedor === 'team_1'} cabeca={j.cabecas?.team_1} />
-        <LinhaDupla nomes={nomes(j.dupla2)} sets={sets('team_2')} venceu={j.vencedor === 'team_2'} cabeca={j.cabecas?.team_2} />
+        <LinhaDupla nomes={nomes(j.dupla1)} sets={sets('team_1')} venceu={j.vencedor === 'team_1'} cabeca={j.cabecas?.team_1} antes={estrela(j.dupla1)} />
+        <LinhaDupla nomes={nomes(j.dupla2)} sets={sets('team_2')} venceu={j.vencedor === 'team_2'} cabeca={j.cabecas?.team_2} antes={estrela(j.dupla2)} />
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pt-1 text-xs text-muted-foreground">
           <span>{[RODADAS[j.rodada] ?? j.nomeRodada, CATEGORIAS[j.categoria], j.quadra].filter(Boolean).join(' · ')}</span>
-          {aindaVai && <Canais canais={j.ondeAssistir} torneio={j.torneio.nome} />}
-          {!aindaVai && j.duracao && <span>{j.duracao}</span>}
+          <span className="ml-auto flex items-center gap-2">
+            {aindaVai && <Canais canais={j.ondeAssistir} torneio={j.torneio.nome} />}
+            {!aindaVai && j.duracao && <span>{j.duracao}</span>}
+            <MenuAcoes
+              tipo="jogo"
+              texto={textoJogo(j)}
+              link={linkDaRota({ aba: 'jogos', dia: diaMundial(j) ?? undefined, jogo: idJogoMundial(j) })}
+              agenda={agenda}
+              arquivoAgenda={`jogo-${j.torneio.nome}`}
+            />
+          </span>
         </div>
       </div>
     </div>

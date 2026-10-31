@@ -3,16 +3,14 @@
 import { readFile } from 'node:fs/promises';
 import { criarFonte } from './fonte.js';
 import { canaisPara, carregarRegrasTransmissao } from './transmissao.js';
-import { cacheSportScoreParaGuardar, carregarCacheSportScore, chamadasSportScore, torneioSportScore } from './sportscore.js';
+import { cacheSportScoreParaGuardar, carregarCacheSportScore, chamadasSportScore } from './sportscore.js';
+import { buscarBr, detalheBr, hojeISO, jogosBr, resumoBr } from './brasil.js';
+
+export { hojeISO };
 
 // Níveis que interessam: circuito Premier Padel + FIP mais forte
 const NIVEIS_PRINCIPAIS = ['major', 'p1', 'p2', 'finals', 'fip_platinum', 'fip_gold'];
 const NIVEIS_PREMIER = ['major', 'p1', 'p2', 'finals'];
-
-// "Hoje" no Brasil: em UTC, depois das 21h de Brasília já seria amanhã
-export function hojeISO() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
-}
 
 function resumoTorneio(t) {
   return {
@@ -66,73 +64,6 @@ function montarJogo(m, torneio, regras) {
 export async function torneiosBrConfigurados() {
   const arquivo = new URL('../data/torneios-br.json', import.meta.url);
   return JSON.parse(await readFile(arquivo, 'utf8')).torneios;
-}
-
-// Torneio acontecendo hoje: confere a cada execução do robô. Fora disso, bem menos, para não
-// ficar batendo no SportScore (sem data cadastrada conta como "ainda vai começar").
-function ttlBr(cfg) {
-  const hoje = hojeISO();
-  if (cfg.fim && cfg.fim < hoje) return 12 * 60 * 60_000;
-  if (!cfg.inicio || cfg.inicio > hoje) return 60 * 60_000;
-  return 3 * 60_000;
-}
-
-const buscarBr = (cfg) =>
-  torneioSportScore(cfg.sportscore, { anoReferencia: cfg.inicio ? Number(cfg.inicio.slice(0, 4)) : undefined, ttl: ttlBr(cfg) });
-
-function contarStatus(jogos) {
-  const conta = { live: 0, scheduled: 0, finished: 0 };
-  for (const j of jogos) conta[j.status] = (conta[j.status] ?? 0) + 1;
-  return conta;
-}
-
-function statusDoTorneio(cfg, dados) {
-  const hoje = hojeISO();
-  const contagem = contarStatus(dados.jogos);
-  if (contagem.live) return 'live';
-  if (cfg.fim && cfg.fim < hoje) return 'finished';
-  if (cfg.inicio && cfg.inicio <= hoje) return 'live';
-  if (dados.jogos.length && !contagem.scheduled) return 'finished';
-  return 'pending';
-}
-
-function resumoBr(cfg, dados) {
-  return {
-    id: cfg.sportscore,
-    nome: cfg.nome || dados.titulo,
-    tituloFonte: dados.titulo,
-    cidade: cfg.cidade,
-    local: cfg.local ?? dados.clubes.map((c) => c.rotulo).join(', '),
-    inicio: cfg.inicio ?? dados.datas[0]?.valor ?? null,
-    fim: cfg.fim ?? dados.datas.at(-1)?.valor ?? null,
-    destaque: !!cfg.destaque,
-    premio: cfg.premio ?? null,
-    links: cfg.links ?? [],
-    ondeAssistir: cfg.ondeAssistir ?? [],
-    publicado: dados.publicado,
-    status: statusDoTorneio(cfg, dados),
-    jogos: contarStatus(dados.jogos),
-    totalJogos: dados.jogos.length,
-  };
-}
-
-function jogosBr(dados) {
-  const clubeUnico = dados.clubes.length === 1 ? dados.clubes[0].rotulo : null;
-  return dados.jogos.map((j) => ({
-    id: j.id,
-    data: j.data,
-    hora: j.hora,
-    inicio: j.inicio,
-    clube: j.clube ?? clubeUnico,
-    quadra: j.quadra,
-    categoria: j.categoria,
-    chave: j.chave,
-    duracao: j.duracao,
-    status: j.status,
-    vencedor: j.vencedor,
-    dupla1: j.duplas[0],
-    dupla2: j.duplas[1],
-  }));
 }
 
 // Janela da aba Jogos: dá para voltar uns dias (resultados) e avançar umas semanas (programação)
@@ -238,7 +169,7 @@ export function criarRotas(token, guardado = {}) {
 
   async function rotaBrTorneios() {
     const lista = await torneiosBrConfigurados();
-    const resultados = await Promise.allSettled(lista.map(buscarBr));
+    const resultados = await Promise.allSettled(lista.map((cfg) => buscarBr(cfg)));
     return lista
       .map((cfg, i) => {
         const r = resultados[i];
@@ -256,12 +187,7 @@ export function criarRotas(token, guardado = {}) {
     const id = url.searchParams.get('id');
     if (!/^\d{1,6}$/.test(id ?? '')) throw Object.assign(new Error('Informe ?id= com o número do torneio no SportScore'), { status: 400 });
     const cfg = (await torneiosBrConfigurados()).find((t) => String(t.sportscore) === id) ?? { sportscore: Number(id) };
-    const dados = await buscarBr(cfg);
-    return {
-      torneio: resumoBr(cfg, dados),
-      categorias: dados.categorias.map((c) => c.rotulo),
-      jogos: jogosBr(dados),
-    };
+    return detalheBr(cfg, await buscarBr(cfg));
   }
 
   return {

@@ -81,14 +81,17 @@ export function LinhaDupla({
   sets,
   venceu,
   cabeca,
+  antes,
 }: {
   nomes: React.ReactNode[];
   sets: string[];
   venceu: boolean;
   cabeca?: string | null;
+  antes?: React.ReactNode; // ex.: estrela de seguir a dupla
 }) {
   return (
     <div className="flex items-center gap-2">
+      {antes}
       <div className={cn('min-w-0 flex-1 text-[15px] leading-snug', venceu && 'font-semibold')}>
         {nomes.length ? (
           <span className="flex min-w-0 flex-wrap items-center gap-x-1">

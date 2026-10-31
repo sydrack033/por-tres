@@ -9,14 +9,14 @@ import { ConviteInstalar, SeloSemInternet, useConectado } from '@/components/pwa
 import { BotaoTema } from '@/components/tema';
 import { ESTATICO, useDados, type Status } from '@/lib/dados';
 import { horaBR } from '@/lib/formato';
+import { irPara, useRota, type Aba } from '@/lib/rota';
 
-const ABAS = [
+const ABAS: [Aba, string][] = [
   ['jogos', 'Jogos'],
   ['calendario', 'Calendário'],
   ['ranking', 'Ranking'],
   ['brasil', 'Brasil'],
-] as const;
-type Aba = (typeof ABAS)[number][0];
+];
 
 function Marca() {
   return (
@@ -70,7 +70,10 @@ function FiltroCategoria({ valor, onMudar, comTodos }: { valor: Categoria; onMud
 }
 
 export default function App() {
-  const [aba, setAba] = useState<Aba>('jogos');
+  // a aba (e o dia, o torneio, o jogo) vêm do endereço: link direto e o Voltar do celular funcionam
+  const rota = useRota();
+  const aba = rota.aba;
+  const setAba = (a: Aba) => irPara({ aba: a });
   const [categoria, setCategoria] = useState<Categoria>('todos');
   const categoriaRanking = categoria === 'women' ? 'women' : 'men';
   const temFiltro = aba === 'jogos' || aba === 'ranking';
@@ -113,10 +116,10 @@ export default function App() {
             <SituacaoDados />
           </div>
 
-          <TabsContent value="jogos"><AbaJogos categoria={categoria} /></TabsContent>
+          <TabsContent value="jogos"><AbaJogos categoria={categoria} dia={rota.dia} jogo={rota.jogo} /></TabsContent>
           <TabsContent value="calendario"><AbaCalendario /></TabsContent>
           <TabsContent value="ranking"><AbaRanking categoria={categoriaRanking} /></TabsContent>
-          <TabsContent value="brasil"><AbaBrasil /></TabsContent>
+          <TabsContent value="brasil"><AbaBrasil torneio={rota.torneio} categoria={rota.categoria} jogo={rota.jogo} /></TabsContent>
         </main>
       </Tabs>
 

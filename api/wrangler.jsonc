@@ -1,0 +1,12 @@
+// Worker do Cloudflare com a busca de torneios do SportScore para a aba Brasil (ver README, "Busca de torneios").
+// O navegador não fala com o SportScore direto (sem CORS): pede para este Worker, que lê e devolve JSON.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "por-tres-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  // Endereço público por-tres-api.<conta>.workers.dev: é o que vai no VITE_API_URL do front
+  "workers_dev": true,
+  // Registro de cada chamada no painel (Workers > por-tres-api > Logs)
+  "observability": { "enabled": true }
+}

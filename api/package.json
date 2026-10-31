@@ -1,0 +1,14 @@
+{
+  "name": "por-tres-api",
+  "private": true,
+  "description": "Worker do Cloudflare que busca torneios no SportScore para a aba Brasil do portres.com.br.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "logs": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.0"
+  }
+}
