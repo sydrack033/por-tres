@@ -1,4 +1,5 @@
 // Peças pequenas usadas em várias telas.
+import { useEffect, useRef } from 'react';
 import { AlertCircle, Inbox, Play, Tv } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -97,8 +98,9 @@ export function LinhaDupla({
   );
 }
 
-// Canal do YouTube abre o player numa janela do próprio site; os outros vão para o site do canal
-export function Canais({ canais }: { canais: Canal[] }) {
+// Canal do YouTube abre o player numa janela do próprio site; os outros vão para o site do canal.
+// torneio: nome que vai nos eventos do Umami (quem abriu / deu play em qual transmissão)
+export function Canais({ canais, torneio }: { canais: Canal[]; torneio?: string }) {
   if (!canais.length) return null;
   const estilo = (c: Canal) =>
     cn(
@@ -110,18 +112,26 @@ export function Canais({ canais }: { canais: Canal[] }) {
       <Tv className="size-3.5 text-muted-foreground" aria-hidden />
       {canais.map((c) =>
         idYouTube(c.url) ? (
-          <Dialog key={c.id}>
+          <Dialog key={c.id} onOpenChange={(aberto) => aberto && registrar('transmissao-aberta', { torneio, canal: c.nome, onde: 'janela' })}>
             <DialogTrigger className={cn(estilo(c), 'inline-flex items-center gap-1')}>
               <Play className="size-3 fill-current" aria-hidden />
               {c.nome}
             </DialogTrigger>
             <DialogContent className="gap-3 p-3 sm:max-w-3xl">
               <DialogTitle className="pr-8 text-sm">{c.nome}</DialogTitle>
-              <PlayerYouTube canal={c} />
+              <PlayerYouTube canal={c} torneio={torneio} />
             </DialogContent>
           </Dialog>
         ) : (
-          <a key={c.id} href={c.url} target="_blank" rel="noopener" title={c.tipo} className={estilo(c)}>
+          <a
+            key={c.id}
+            href={c.url}
+            target="_blank"
+            rel="noopener"
+            title={c.tipo}
+            className={estilo(c)}
+            onClick={() => registrar('canal-externo', { torneio, canal: c.nome })}
+          >
             {c.nome}
           </a>
         ),
@@ -142,20 +152,83 @@ export function idYouTube(url: string): string | null {
   }
 }
 
+// Evento no Umami (script carregado só no site publicado; sem ele, não faz nada)
+type Umami = { track: (nome: string, dados?: Record<string, unknown>) => void };
+export function registrar(nome: string, dados?: Record<string, unknown>) {
+  try {
+    (window as unknown as { umami?: Umami }).umami?.track(nome, dados);
+  } catch {
+    /* analytics nunca derruba a página */
+  }
+}
+
+const YOUTUBE = 'https://www.youtube-nocookie.com';
+const MINUTO = 60_000;
+
 // Transmissão no YouTube tocando no próprio site (sem cookie até dar play).
-// canais: usa o primeiro que for do YouTube; canal: um específico
-export function PlayerYouTube({ canais = [], canal: escolhido }: { canais?: Canal[]; canal?: Canal }) {
+// canais: usa o primeiro que for do YouTube; canal: um específico.
+// Com enablejsapi o player avisa por postMessage quando toca e pausa: vira "transmissao-play"
+// e, a cada minuto tocando, "transmissao-assistindo" (é o que dá a noção de quantos estão vendo agora).
+export function PlayerYouTube({ canais = [], canal: escolhido, torneio }: { canais?: Canal[]; canal?: Canal; torneio?: string }) {
   const canal = escolhido ?? canais.find((c) => idYouTube(c.url));
+  const quadro = useRef<HTMLIFrameElement>(null);
+  // Fora do efeito: os dados recarregam sozinhos e o efeito roda de novo, mas o vídeo continua tocando
+  const estado = useRef({ tocando: false, jaDeuPlay: false, minutos: 0, ouvindo: false });
+  const nome = canal?.nome;
+
+  useEffect(() => {
+    if (!nome) return;
+    const dados = { torneio, canal: nome };
+    const st = estado.current;
+    const relogio = setInterval(() => {
+      if (!st.tocando) return;
+      st.minutos++;
+      registrar('transmissao-assistindo', { ...dados, minutos: st.minutos });
+    }, MINUTO);
+    const aoReceber = (e: MessageEvent) => {
+      if (e.origin !== YOUTUBE || e.source !== quadro.current?.contentWindow) return;
+      st.ouvindo = true;
+      let msg: { event?: string; info?: number | { playerState?: number } };
+      try {
+        msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      } catch {
+        return;
+      }
+      const situacao = msg.event === 'onStateChange' ? msg.info : typeof msg.info === 'object' ? msg.info?.playerState : undefined;
+      if (typeof situacao !== 'number') return;
+      st.tocando = situacao === 1; // 1 = tocando, 2 = pausado, 0 = acabou
+      if (st.tocando && !st.jaDeuPlay) {
+        st.jaDeuPlay = true;
+        registrar('transmissao-play', dados);
+      }
+    };
+    window.addEventListener('message', aoReceber);
+    return () => {
+      clearInterval(relogio);
+      window.removeEventListener('message', aoReceber);
+    };
+  }, [nome, torneio]);
+
   if (!canal) return null;
+  // Pede ao player para mandar os eventos de estado para esta página. O player só atende depois de
+  // pronto, então repete a cada segundo até ele responder (como faz a API oficial do YouTube)
+  const escutar = () => {
+    let tentativas = 0;
+    const pedir = setInterval(() => {
+      if (estado.current.ouvindo || ++tentativas > 20 || !quadro.current) return clearInterval(pedir);
+      quadro.current.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: 'por-tres' }), YOUTUBE);
+    }, 1000);
+  };
   return (
     <div className="overflow-hidden rounded-xl border bg-black">
       <iframe
-        src={`https://www.youtube-nocookie.com/embed/${idYouTube(canal.url)}?rel=0`}
+        ref={quadro}
+        onLoad={escutar}
+        src={`${YOUTUBE}/embed/${idYouTube(canal.url)}?rel=0&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`}
         title={`Transmissão: ${canal.nome}`}
         className="aspect-video w-full"
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
-        loading="lazy"
       />
     </div>
   );

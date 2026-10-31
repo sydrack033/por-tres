@@ -45,7 +45,7 @@ export function LinhaJogo({ jogo: j }: { jogo: Jogo }) {
         <LinhaDupla nomes={nomes(j.dupla2)} sets={sets('team_2')} venceu={j.vencedor === 'team_2'} cabeca={j.cabecas?.team_2} />
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pt-1 text-xs text-muted-foreground">
           <span>{[RODADAS[j.rodada] ?? j.nomeRodada, CATEGORIAS[j.categoria], j.quadra].filter(Boolean).join(' · ')}</span>
-          {aindaVai && <Canais canais={j.ondeAssistir} />}
+          {aindaVai && <Canais canais={j.ondeAssistir} torneio={j.torneio.nome} />}
           {!aindaVai && j.duracao && <span>{j.duracao}</span>}
         </div>
       </div>
@@ -72,7 +72,7 @@ function ListaTorneios({ torneios }: { torneios: Torneio[] }) {
                 <Bandeira pais={t.pais} />
                 {[t.cidade, t.local].filter(Boolean).join(' · ')} · {periodo(t.inicio, t.fim)}
               </span>
-              <Canais canais={t.ondeAssistir ?? []} />
+              <Canais canais={t.ondeAssistir ?? []} torneio={t.nome} />
             </div>
           </div>
         </div>

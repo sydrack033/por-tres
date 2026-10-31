@@ -108,7 +108,7 @@ function Destacar({ nome, busca }: { nome: string; busca: string }) {
   return <mark className="truncate rounded bg-bola px-0.5 text-black">{nome}</mark>;
 }
 
-export function LinhaJogoBr({ jogo: j, busca = '', canais = [] }: { jogo: JogoBr; busca?: string; canais?: Canal[] }) {
+export function LinhaJogoBr({ jogo: j, busca = '', canais = [], torneio }: { jogo: JogoBr; busca?: string; canais?: Canal[]; torneio?: string }) {
   const nomes = (d: JogoBr['dupla1']) => d.jogadores.map((n) => <Destacar nome={n} busca={busca} />);
   const aindaVai = j.status === 'scheduled' || j.status === 'live';
   return (
@@ -119,7 +119,7 @@ export function LinhaJogoBr({ jogo: j, busca = '', canais = [] }: { jogo: JogoBr
         <LinhaDupla nomes={nomes(j.dupla2)} sets={j.dupla2.sets} venceu={j.vencedor === 2} />
         <div className="flex flex-wrap justify-between gap-x-3 pt-1 text-xs text-muted-foreground">
           <span>{[j.categoria, j.chave && `Chave ${j.chave}`, j.quadra ? `Quadra ${j.quadra}` : j.clube].filter(Boolean).join(' · ')}</span>
-          {aindaVai && canais.length > 0 ? <Canais canais={canais} /> : <span>{[j.duracao, `Jogo ${j.id}`].filter(Boolean).join(' · ')}</span>}
+          {aindaVai && canais.length > 0 ? <Canais canais={canais} torneio={torneio} /> : <span>{[j.duracao, `Jogo ${j.id}`].filter(Boolean).join(' · ')}</span>}
         </div>
       </div>
     </div>
@@ -164,10 +164,10 @@ function TorneioBrView({ id, onVoltar }: { id: number; onVoltar: () => void }) {
       <div className="space-y-2">
         <CabecalhoTorneio nome={t.nome} pais="BR" local={[t.cidade, t.local].filter(Boolean).join(' · ')} inicio={t.inicio} fim={t.fim} extra={<SeloStatus status={t.status} />} />
         <Links links={t.links} />
-        <Canais canais={t.ondeAssistir} />
+        <Canais canais={t.ondeAssistir} torneio={t.nome} />
       </div>
 
-      {t.status !== 'finished' && <PlayerYouTube canais={t.ondeAssistir} />}
+      {t.status !== 'finished' && <PlayerYouTube canais={t.ondeAssistir} torneio={t.nome} />}
 
       <div className="flex flex-col gap-2 rounded-xl border bg-card p-3 md:flex-row md:items-center">
         <div className="relative md:flex-1">
@@ -199,7 +199,7 @@ function TorneioBrView({ id, onVoltar }: { id: number; onVoltar: () => void }) {
               {dia ? diaLongo(dia) : 'Sem data'} · {jogos.length} {jogos.length === 1 ? 'jogo' : 'jogos'}
             </h3>
             <Card className="gap-0 divide-y overflow-hidden py-0">
-              {jogos.map((j) => <LinhaJogoBr key={j.id} jogo={j} busca={busca} />)}
+              {jogos.map((j) => <LinhaJogoBr key={j.id} jogo={j} busca={busca} canais={t.ondeAssistir} torneio={t.nome} />)}
             </Card>
           </section>
         ))

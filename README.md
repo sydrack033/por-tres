@@ -74,6 +74,17 @@ O Cloudflare só conta visitas. O Umami Cloud (plano grátis, sem cookie) mostra
 `portres.com.br`, copia o **Website ID** e grava na variável `UMAMI_WEBSITE_ID` do repositório
 (`gh variable set UMAMI_WEBSITE_ID -R sydrack033/por-tres`). Não é segredo: aparece no HTML.
 
+Eventos das transmissões (Umami > **Events**), todos com o nome do torneio e do canal:
+
+- `transmissao-aberta`: abriu o player do YouTube na janela (clique no selo do canal).
+- `transmissao-play`: o vídeo começou a tocar no site (uma vez por player aberto).
+- `transmissao-assistindo`: a cada minuto que o vídeo segue tocando (`minutos` = há quanto tempo). No Realtime, é o
+  que dá a noção de quantos estão assistindo agora.
+- `canal-externo`: clicou num canal que não é YouTube e saiu para o site dele.
+
+O site sabe se o vídeo está tocando porque o player vai com `enablejsapi=1` e avisa por `postMessage`
+(`PlayerYouTube` em `web/src/components/partes.tsx`).
+
 ## Rodar
 
 Precisa de Node 20 ou mais novo.
