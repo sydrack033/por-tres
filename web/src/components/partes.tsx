@@ -1,5 +1,6 @@
 // Peças pequenas usadas em várias telas.
-import { AlertCircle, Inbox, Tv } from 'lucide-react';
+import { AlertCircle, Inbox, Play, Tv } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { periodo } from '@/lib/formato';
@@ -96,26 +97,35 @@ export function LinhaDupla({
   );
 }
 
+// Canal do YouTube abre o player numa janela do próprio site; os outros vão para o site do canal
 export function Canais({ canais }: { canais: Canal[] }) {
   if (!canais.length) return null;
+  const estilo = (c: Canal) =>
+    cn(
+      'rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors hover:border-primary hover:text-foreground',
+      c.tipo === 'grátis' ? 'border-primary/50 text-primary' : 'text-muted-foreground',
+    );
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <Tv className="size-3.5 text-muted-foreground" aria-hidden />
-      {canais.map((c) => (
-        <a
-          key={c.id}
-          href={c.url}
-          target="_blank"
-          rel="noopener"
-          title={c.tipo}
-          className={cn(
-            'rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors hover:border-primary hover:text-foreground',
-            c.tipo === 'grátis' ? 'border-primary/50 text-primary' : 'text-muted-foreground',
-          )}
-        >
-          {c.nome}
-        </a>
-      ))}
+      {canais.map((c) =>
+        idYouTube(c.url) ? (
+          <Dialog key={c.id}>
+            <DialogTrigger className={cn(estilo(c), 'inline-flex items-center gap-1')}>
+              <Play className="size-3 fill-current" aria-hidden />
+              {c.nome}
+            </DialogTrigger>
+            <DialogContent className="gap-3 p-3 sm:max-w-3xl">
+              <DialogTitle className="pr-8 text-sm">{c.nome}</DialogTitle>
+              <PlayerYouTube canal={c} />
+            </DialogContent>
+          </Dialog>
+        ) : (
+          <a key={c.id} href={c.url} target="_blank" rel="noopener" title={c.tipo} className={estilo(c)}>
+            {c.nome}
+          </a>
+        ),
+      )}
     </div>
   );
 }
@@ -132,9 +142,10 @@ export function idYouTube(url: string): string | null {
   }
 }
 
-// Transmissão no YouTube tocando no próprio site (sem cookie até dar play)
-export function PlayerYouTube({ canais }: { canais: Canal[] }) {
-  const canal = canais.find((c) => idYouTube(c.url));
+// Transmissão no YouTube tocando no próprio site (sem cookie até dar play).
+// canais: usa o primeiro que for do YouTube; canal: um específico
+export function PlayerYouTube({ canais = [], canal: escolhido }: { canais?: Canal[]; canal?: Canal }) {
+  const canal = escolhido ?? canais.find((c) => idYouTube(c.url));
   if (!canal) return null;
   return (
     <div className="overflow-hidden rounded-xl border bg-black">
