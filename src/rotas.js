@@ -67,6 +67,25 @@ export async function torneiosBrConfigurados() {
   return JSON.parse(await readFile(arquivo, 'utf8')).torneios;
 }
 
+// O SportScore não informa a nacionalidade: ela vem de data/nacionalidades-br.json (mantido à mão).
+// O nome casa sem acento, maiúscula nem espaço sobrando. Quem não está lá fica sem bandeira.
+const chaveNome = (nome) => nome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+async function carregarPaises() {
+  const arquivo = new URL('../data/nacionalidades-br.json', import.meta.url);
+  const { jogadores } = JSON.parse(await readFile(arquivo, 'utf8'));
+  return new Map(Object.entries(jogadores).map(([nome, { pais }]) => [chaveNome(nome), pais]));
+}
+
+// dupla.paises: um código por jogador, na mesma ordem (null = não sabemos). Só vai se tiver algum.
+function comPaises(jogos, paises) {
+  const dupla = (d) => {
+    const lista = d.jogadores.map((n) => paises.get(chaveNome(n)) ?? null);
+    return lista.some(Boolean) ? { ...d, paises: lista } : d;
+  };
+  return jogos.map((j) => ({ ...j, dupla1: dupla(j.dupla1), dupla2: dupla(j.dupla2) }));
+}
+
 // Janela da aba Jogos: dá para voltar uns dias (resultados) e avançar umas semanas (programação)
 const JANELA_ANTES = 10;
 const JANELA_DEPOIS = 21;
@@ -142,12 +161,13 @@ export function criarRotas(token, guardado = {}) {
     }
 
     const configurados = await torneiosBrConfigurados();
+    const paises = await carregarPaises();
     const brasil = [];
     for (const cfg of configurados) {
       if ((cfg.fim && cfg.fim < de) || (cfg.inicio && cfg.inicio > ate)) continue;
       try {
         const dados = await buscarBr(cfg);
-        if (dados.jogos.length) brasil.push({ torneio: resumoBr(cfg, dados), jogos: jogosBr(dados) });
+        if (dados.jogos.length) brasil.push({ torneio: resumoBr(cfg, dados), jogos: comPaises(jogosBr(dados), paises) });
       } catch (erro) {
         console.error(`[jogos] SportScore ${cfg.sportscore}:`, erro.message);
       }
@@ -188,7 +208,8 @@ export function criarRotas(token, guardado = {}) {
     const id = url.searchParams.get('id');
     if (!/^\d{1,6}$/.test(id ?? '')) throw Object.assign(new Error('Informe ?id= com o número do torneio no SportScore'), { status: 400 });
     const cfg = (await torneiosBrConfigurados()).find((t) => String(t.sportscore) === id) ?? { sportscore: Number(id) };
-    return detalheBr(cfg, await buscarBr(cfg));
+    const detalhe = detalheBr(cfg, await buscarBr(cfg));
+    return { ...detalhe, jogos: comPaises(detalhe.jogos, await carregarPaises()) };
   }
 
   return {

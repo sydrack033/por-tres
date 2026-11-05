@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Aviso, CabecalhoTorneio, CampoBusca, Canais, Carregando, ColunaHora, Destacar, LinhaDupla, nomeCurto, PlayerYouTube, registrar, type InfoHora } from '@/components/partes';
+import { Aviso, Bandeira, CabecalhoTorneio, CampoBusca, Canais, Carregando, ColunaHora, Destacar, LinhaDupla, nomeCurto, PlayerYouTube, registrar, type InfoHora } from '@/components/partes';
 import { MenuAcoes, Seguir } from '@/components/acoes';
 import { inicioBr } from '@/lib/compartilhar';
 import { irPara, linkDaRota } from '@/lib/rota';
@@ -270,7 +270,12 @@ export function LinhaJogoBr({
   ancora?: boolean; // false no "Teu próximo jogo": o link direto rola até a linha da lista, não até o cartão
 }) {
   const seguindo = useSeguindo();
-  const nomes = (d: JogoBr['dupla1']) => d.jogadores.map((n) => <Destacar nome={n} busca={busca} sobrenome="ultimo" />);
+  const nomes = (d: JogoBr['dupla1']) => d.jogadores.map((n, i) => (
+    <>
+      <Bandeira pais={d.paises?.[i]} />
+      <Destacar nome={n} busca={busca} sobrenome="ultimo" />
+    </>
+  ));
   const estrela = (d: JogoBr['dupla1']) =>
     d.jogadores.length > 0 && (
       <Seguir

@@ -177,6 +177,11 @@ de SC usam. Não precisa de token.
 - Transmissão: `ondeAssistir` do torneio em `data/torneios-br.json` (mesmo formato dos canais: `id`, `nome`, `tipo`,
   `url`). Aparece nos jogos que ainda vão acontecer e, se for vídeo do YouTube, vira um player na tela do torneio
   (só se o canal permitir incorporar o vídeo).
+- Bandeiras: o SportScore não informa a nacionalidade. Ela vem de `data/nacionalidades-br.json`, mantido à mão
+  (nome como aparece no SportScore → código do país, com a fonte). Quem não está lá fica sem bandeira; `semFonte`
+  lista quem foi procurado e não achado. Fontes boas: busca de jogadores da Padel API (`/players?name=`, traz
+  nacionalidade e cidade de nascimento) e os perfis/rankings do padelfip.com. Só vale nos torneios da lista (o Worker
+  da busca não aplica).
 - Torneio com inscrição aberta e tabela ainda não gerada aparece como "Tabela de jogos ainda não publicada".
 - Na tela do torneio: filtro por categoria, situação (em quadra, próximos, encerrados) e busca pelo nome do jogador.
 

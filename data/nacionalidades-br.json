@@ -1,0 +1,43 @@
+{
+  "observacao": "Nacionalidade dos jogadores dos torneios do SportScore, que não informa o país. Mantido à mão: o nome como aparece no SportScore -> código de país de 2 letras (bandeira). Acento, maiúscula e espaço sobrando não importam. Quem não está aqui aparece sem bandeira. 'fonte' diz de onde veio, para conferir depois. Montado em 05/11/2026 para a categoria Profissional da Liga Brasileira (Etapa 1).",
+  "jogadores": {
+    "Axel Guevara": { "pais": "AR", "fonte": "Padel API: Axel William Guevara, nascido em General Pico" },
+    "Bernardo Rigon": { "pais": "BR", "fonte": "FIP: Bernardo De Marco Rigon (BRA), dupla de Frederico De Marco Rigon" },
+    "Brian Ortiz": { "pais": "AR", "fonte": "Padel API: Brian Ortiz" },
+    "Bruno Nakid": { "pais": "BR", "fonte": "Padel API: Bruno Nakid" },
+    "Cristian Daniel Ozan": { "pais": "AR", "fonte": "FIP: perfil de Cristian Daniel Ozan (ARG)" },
+    "Federico Alejandro Fleitas": { "pais": "AR", "fonte": "Padel API: nascido em Formosa" },
+    "Federico Galarza": { "pais": "AR", "fonte": "Padel API: Federico Nicolas Galarza" },
+    "Federico Salaro": { "pais": "AR", "fonte": "Padel API: Federico Salaro" },
+    "Francisco Maier": { "pais": "AR", "fonte": "Padel API: nascido em Necochea" },
+    "Frederico Rigon": { "pais": "BR", "fonte": "Padel API: Frederico De Marco Rigon" },
+    "German Faure": { "pais": "AR", "fonte": "Padel API: German Faure" },
+    "Gonzalo Escobar": { "pais": "AR", "fonte": "Padel API: nascido em Corrientes" },
+    "Gustavo Lavandoski": { "pais": "BR", "fonte": "FIP: ranking masculino de 2024 (BRA)" },
+    "Higor Ensslin": { "pais": "UY", "fonte": "Padel API: Higor Ensslin Alves, nascido em Rio Branco" },
+    "Juanchi Forastello": { "pais": "AR", "fonte": "Padel API: Juan Cruz Forastello, nascido em Villa Mercedes" },
+    "Leonardo Yob": { "pais": "AR", "fonte": "Padel API: nascido em San Francisco" },
+    "Leonel Tolito Daniel Aguirre": { "pais": "AR", "fonte": "Padel API: Tolito Aguirre, nascido em Buenos Aires" },
+    "Lucas Bonini Izkovitz": { "pais": "BR", "fonte": "FIP: perfil de Lucas Bonini Izkovitz (BRA)" },
+    "Lucas Cunha": { "pais": "BR", "fonte": "Padel API: Lucas Da Cunha" },
+    "Luciano Puppo": { "pais": "AR", "fonte": "Padel API: nascido em Buenos Aires" },
+    "Manuel Gayone": { "pais": "AR", "fonte": "Padel API: nascido em Mar del Plata" },
+    "Marcio André A. Crizel": { "pais": "BR", "fonte": "Padel API: Marcio Andre Crizel" },
+    "Matheus Cadinelli": { "pais": "BR", "fonte": "FIP: Matheus Cadinelli De Farias (BRA)" },
+    "Matias Emmanuel Del Moral": { "pais": "AR", "fonte": "Padel API: nascido em La Rioja" },
+    "Máximo Jesús Maldonado": { "pais": "AR", "fonte": "Padel API: nascido em Rosario del Tala" },
+    "Naim Diaz": { "pais": "AR", "fonte": "Padel API: Naim Horacio Diaz, nascido em La Rioja" },
+    "Pablo Molina Tofanelli": { "pais": "AR", "fonte": "Padel API: nascido em La Rioja" },
+    "Relis Ferreira": { "pais": "AR", "fonte": "Padel API e FIP: Relis Ferreyra (com y), do Chaco" },
+    "Samuel Rodriguez": { "pais": "PY", "fonte": "Padel API: nascido em Asunción" },
+    "Thiago Pinto": { "pais": "AR", "fonte": "Padel API: nascido em Morón" }
+  },
+  "semFonte": [
+    "Adrian Pérez",
+    "Benjamin Vargas",
+    "Franco Montañana Tasso",
+    "Joaquin Aranda",
+    "Lucas Adrián Da Rosa",
+    "Lucas Duffort"
+  ]
+}

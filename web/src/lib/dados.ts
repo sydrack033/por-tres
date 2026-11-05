@@ -94,7 +94,8 @@ export type TorneioBr = {
   totalJogos: number;
 };
 
-export type DuplaBr = { jogadores: string[]; sets: string[] };
+// paises: um código por jogador, na ordem de "jogadores" (null = não sabemos); vem de data/nacionalidades-br.json
+export type DuplaBr = { jogadores: string[]; sets: string[]; paises?: (string | null)[] };
 
 export type JogoBr = {
   id: string;
