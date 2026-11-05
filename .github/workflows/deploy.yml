@@ -72,6 +72,10 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # só para criar o commit que serve de versão (não mexe em branch nenhuma)
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -80,6 +84,8 @@ jobs:
       # mas com uma versão por execução. O deploy-pages usa o SHA do commit como versão, e o robô
       # publica centenas de vezes com o mesmo commit: em 04/11/2026 o Pages passou a aceitar essas
       # publicações repetidas, responder "succeed" e continuar servindo o conteúdo antigo.
+      # A versão tem que ser um commit do repositório (texto livre dá 404), então cada execução cria
+      # um commit vazio (mesma árvore, filho do commit atual) sem ligar a branch nenhuma.
       - id: deployment
         name: Publicar no GitHub Pages
         uses: actions/github-script@v8
@@ -88,15 +94,21 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo
-            const versao = `${context.sha}-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`
             const artifact_id = Number(process.env.ARTIFACT_ID)
             if (!artifact_id) throw new Error('O build não informou o artifact_id do upload-pages-artifact')
+
+            const { data: atual } = await github.rest.git.getCommit({ owner, repo, commit_sha: context.sha })
+            const { data: marca } = await github.rest.git.createCommit({
+              owner, repo, tree: atual.tree.sha, parents: [context.sha],
+              message: `Versão da publicação (execução ${context.runId}, tentativa ${process.env.GITHUB_RUN_ATTEMPT})`,
+            })
+            const versao = marca.sha
 
             const { data: criada } = await github.request('POST /repos/{owner}/{repo}/pages/deployments', {
               owner, repo, artifact_id, pages_build_version: versao, oidc_token: await core.getIDToken(),
             })
             const id = criada.id || versao
-            core.info(`Publicação ${id} criada (artefato ${artifact_id})`)
+            core.info(`Publicação ${id} criada (versão ${versao}, artefato ${artifact_id})`)
             core.setOutput('page_url', criada.page_url)
 
             const falhas = ['deployment_failed', 'deployment_perms_error', 'deployment_content_failed', 'deployment_cancelled', 'deployment_lost']
