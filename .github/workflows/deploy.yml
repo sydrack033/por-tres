@@ -26,6 +26,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      artifact_id: ${{ steps.artefato.outputs.artifact_id }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -62,7 +64,8 @@ jobs:
           path: .cache-robo
           key: robo-${{ github.run_id }}-${{ github.run_attempt }}
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - id: artefato
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
@@ -73,5 +76,48 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Faz o mesmo que o actions/deploy-pages (cria a publicação na API do Pages e espera o status),
+      # mas com uma versão por execução. O deploy-pages usa o SHA do commit como versão, e o robô
+      # publica centenas de vezes com o mesmo commit: em 04/11/2026 o Pages passou a aceitar essas
+      # publicações repetidas, responder "succeed" e continuar servindo o conteúdo antigo.
       - id: deployment
-        uses: actions/deploy-pages@v4
+        name: Publicar no GitHub Pages
+        uses: actions/github-script@v8
+        env:
+          ARTIFACT_ID: ${{ needs.build.outputs.artifact_id }}
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const versao = `${context.sha}-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`
+            const artifact_id = Number(process.env.ARTIFACT_ID)
+            if (!artifact_id) throw new Error('O build não informou o artifact_id do upload-pages-artifact')
+
+            const { data: criada } = await github.request('POST /repos/{owner}/{repo}/pages/deployments', {
+              owner, repo, artifact_id, pages_build_version: versao, oidc_token: await core.getIDToken(),
+            })
+            const id = criada.id || versao
+            core.info(`Publicação ${id} criada (artefato ${artifact_id})`)
+            core.setOutput('page_url', criada.page_url)
+
+            const falhas = ['deployment_failed', 'deployment_perms_error', 'deployment_content_failed', 'deployment_cancelled', 'deployment_lost']
+            const limite = Date.now() + 10 * 60 * 1000
+            let errosSeguidos = 0
+            for (;;) {
+              await new Promise((r) => setTimeout(r, 5000))
+              let status
+              try {
+                ({ data: { status } } = await github.request('GET /repos/{owner}/{repo}/pages/deployments/{id}', { owner, repo, id }))
+                errosSeguidos = 0
+              } catch (erro) {
+                if (++errosSeguidos >= 10) throw erro
+                core.warning(`Status indisponível (HTTP ${erro.status}), tentando de novo`)
+                continue
+              }
+              if (status === 'succeed') { core.info('Publicado.'); break }
+              if (falhas.includes(status)) throw new Error(`A publicação falhou: ${status}`)
+              core.info(`Status: ${status}`)
+              if (Date.now() > limite) {
+                await github.request('POST /repos/{owner}/{repo}/pages/deployments/{id}/cancel', { owner, repo, id }).catch(() => {})
+                throw new Error('A publicação passou de 10 minutos e foi cancelada')
+              }
+            }

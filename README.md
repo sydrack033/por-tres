@@ -29,6 +29,10 @@ O Pages só hospeda arquivo estático, então o site publicado não tem servidor
   de uma execução para a outra (`actions/cache`). Assim cada execução só busca o que pode ter mudado; os prazos
   estão no `TTL` de `src/fonte.js` e no `ttlBr` de `src/rotas.js`. O `dados/status.json` publicado mostra quantas
   chamadas a última execução gastou em cada fonte.
+- A publicação não usa o `actions/deploy-pages`: o job `deploy` chama a API do Pages direto, com uma versão
+  por execução (`sha-run_id-attempt`). Com o SHA do commit como versão (o que o `deploy-pages` faz), toda
+  execução sem commit novo repetia a versão, e em 04/11/2026 o Pages passou a dizer "succeed" sem trocar o site.
+  Para conferir se o site está em dia: o `geradoEm` de `https://portres.com.br/dados/status.json`.
 - O token da Padel API fica no segredo `PADEL_API_TOKEN` do repositório. Ele só existe durante o build
   e não vai para nenhum arquivo publicado.
 - Para atualizar na hora: aba **Actions > Atualizar dados e publicar > Run workflow**.
