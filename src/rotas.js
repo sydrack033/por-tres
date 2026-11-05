@@ -8,9 +8,10 @@ import { buscarBr, detalheBr, hojeISO, jogosBr, resumoBr } from './brasil.js';
 
 export { hojeISO };
 
-// Níveis que interessam: circuito Premier Padel + FIP mais forte
-const NIVEIS_PRINCIPAIS = ['major', 'p1', 'p2', 'finals', 'fip_platinum', 'fip_gold'];
-const NIVEIS_PREMIER = ['major', 'p1', 'p2', 'finals'];
+// Níveis que interessam: circuito Premier Padel + FIP mais forte.
+// fip_other: a Padel API põe a FIP World Cup (seleções) nesse nível; em nov/2026 era o único torneio nele.
+const NIVEIS_PRINCIPAIS = ['major', 'p1', 'p2', 'finals', 'fip_other', 'fip_platinum', 'fip_gold'];
+const NIVEIS_PREMIER = ['major', 'p1', 'p2', 'finals', 'fip_other'];
 
 function resumoTorneio(t) {
   return {
