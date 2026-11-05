@@ -1,13 +1,13 @@
 // Aba Brasil: torneios do SportScore (Liga Brasileira, circuitos de clube...).
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ChevronRight, ExternalLink, Search, Star, Trophy, X } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ExternalLink, Search, Star, Trophy } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Aviso, CabecalhoTorneio, Canais, Carregando, ColunaHora, LinhaDupla, NomeJogador, nomeCurto, PlayerYouTube, registrar, type InfoHora } from '@/components/partes';
+import { Aviso, CabecalhoTorneio, CampoBusca, Canais, Carregando, ColunaHora, Destacar, LinhaDupla, nomeCurto, PlayerYouTube, registrar, type InfoHora } from '@/components/partes';
 import { MenuAcoes, Seguir } from '@/components/acoes';
 import { inicioBr } from '@/lib/compartilhar';
 import { irPara, linkDaRota } from '@/lib/rota';
@@ -55,32 +55,6 @@ function filtrarTorneios(lista: TorneioBr[], busca: string) {
   const termo = semAcento(busca).trim();
   if (!termo) return lista;
   return lista.filter((t) => [t.nome, t.tituloFonte, t.cidade, t.local].some((c) => c && semAcento(c).includes(termo)));
-}
-
-function CampoBusca({ valor, onMudar }: { valor: string; onMudar: (v: string) => void }) {
-  return (
-    <div className="relative">
-      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        type="search"
-        value={valor}
-        onChange={(e) => onMudar(e.target.value)}
-        placeholder="Procura um torneio, cidade ou clube"
-        aria-label="Procurar torneio"
-        className="pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden"
-      />
-      {valor && (
-        <button
-          type="button"
-          onClick={() => onMudar('')}
-          aria-label="Limpar busca"
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
-        >
-          <X className="size-4" />
-        </button>
-      )}
-    </div>
-  );
 }
 
 // Torneios que casam com a busca no SportScore mas não estão na lista do site
@@ -173,7 +147,7 @@ function ListaTorneiosBr({
   const mostrarExterna = API_LIGADA && digitado.length >= MINIMO_BUSCA && !(digitado === termo && externa.isError);
   return (
     <div className="space-y-4">
-      <CampoBusca valor={busca} onMudar={onBusca} />
+      <CampoBusca valor={busca} onMudar={onBusca} placeholder="Procura um torneio, cidade ou clube" rotulo="Procurar torneio" />
       {isPending ? (
         <Carregando linhas={4} />
       ) : error ? (
@@ -248,12 +222,6 @@ function infoHoraBr(j: JogoBr): InfoHora {
   return { tipo: 'indefinido', hora: '—', dia: rotuloDia(j.data), nota: 'a definir' };
 }
 
-function Destacar({ nome, busca }: { nome: string; busca: string }) {
-  const termo = semAcento(busca).trim();
-  if (!termo || !semAcento(nome).includes(termo)) return <NomeJogador nome={nome} sobrenome="ultimo" />;
-  return <mark className="truncate rounded bg-bola px-0.5 text-black">{nome}</mark>;
-}
-
 // Link de um jogo: a tela do torneio já filtrada na categoria, com o jogo destacado
 export const linkJogoBr = (torneioId: number, j: JogoBr) =>
   linkDaRota({ aba: 'brasil', torneio: torneioId, categoria: j.categoria ?? undefined, jogo: j.id });
@@ -302,7 +270,7 @@ export function LinhaJogoBr({
   ancora?: boolean; // false no "Teu próximo jogo": o link direto rola até a linha da lista, não até o cartão
 }) {
   const seguindo = useSeguindo();
-  const nomes = (d: JogoBr['dupla1']) => d.jogadores.map((n) => <Destacar nome={n} busca={busca} />);
+  const nomes = (d: JogoBr['dupla1']) => d.jogadores.map((n) => <Destacar nome={n} busca={busca} sobrenome="ultimo" />);
   const estrela = (d: JogoBr['dupla1']) =>
     d.jogadores.length > 0 && (
       <Seguir

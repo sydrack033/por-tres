@@ -1,6 +1,6 @@
 // Aba Jogos (estilo SofaScore): escolhe o dia na faixa de datas ou no calendário e vê os jogos
 // daquele dia separados por campeonato, cada um podendo recolher/expandir.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Star } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Seguir } from '@/components/acoes';
@@ -12,11 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Aviso, Bandeira, Carregando } from '@/components/partes';
+import { Aviso, Bandeira, CampoBusca, Carregando, registrar } from '@/components/partes';
 import { diaMundial, ENCERRADO, idJogoMundial, LinhaJogo, type Categoria } from '@/secoes/Mundial';
 import { LinhaJogoBr } from '@/secoes/Brasil';
+import { useAtrasado } from '@/lib/api';
 import { useDados, type Jogo, type JogoBr, type JogosPeriodo } from '@/lib/dados';
-import { dataSemFuso, diaISO, diaLongo, horarioMadriParaData, periodo, rotuloDia } from '@/lib/formato';
+import { dataSemFuso, diaISO, diaLongo, horarioMadriParaData, periodo, rotuloDia, semAcento } from '@/lib/formato';
 import { cn } from '@/lib/utils';
 
 // ---------- datas ----------
@@ -73,26 +74,32 @@ const nomesMundial = (j: Jogo) => [...j.dupla1, ...j.dupla2].map((p) => p.nome);
 const nomesBr = (j: JogoBr) => [...j.dupla1.jogadores, ...j.dupla2.jogadores];
 
 // O jogo que veio por link direto ganha um fundo por uns segundos
-function LinhaMundial({ jogo, aceso }: { jogo: Jogo; aceso: boolean }) {
+function LinhaMundial({ jogo, aceso, busca }: { jogo: Jogo; aceso: boolean; busca: string }) {
   return (
     <div id={`jogo-${idJogoMundial(jogo)}`} className={cn('scroll-mt-40 transition-colors duration-1000', aceso && 'bg-bola/15')}>
-      <LinhaJogo jogo={jogo} />
+      <LinhaJogo jogo={jogo} busca={busca} />
     </div>
   );
 }
 
+// Busca da tela inicial: a partir de 2 letras, procura em todos os dias (não só no escolhido)
+const MINIMO_BUSCA_JOGOS = 2;
+const casaBusca = (termo: string, nomes: string[], torneio: string) =>
+  semAcento(torneio).includes(termo) || nomes.some((n) => semAcento(n).includes(termo));
+
+// termo: busca já sem acento e minúscula; vazio = só os jogos do dia
 function montarGrupos(
-  dados: JogosPeriodo, dia: string, categoria: Categoria, filtro: FiltroJogos, seguindo: Seguindo, aceso?: string,
+  dados: JogosPeriodo, dia: string, categoria: Categoria, filtro: FiltroJogos, seguindo: Seguindo, aceso?: string, termo = '',
 ): Grupo[] {
   const grupos = new Map<string, Grupo>();
   const passa = (situacao: Situacao, meu: boolean) =>
     filtro === 'todos' || (filtro === 'meus' ? meu : situacao === filtro);
 
   for (const j of dados.mundial) {
-    if (diaMundial(j) !== dia) continue;
+    const t = j.torneio;
+    if (termo ? !casaBusca(termo, nomesMundial(j), t.nome) : diaMundial(j) !== dia) continue;
     if (categoria !== 'todos' && j.categoria !== categoria) continue;
     if (!j.dupla1.length && !j.dupla2.length) continue; // rodada ainda sem dupla
-    const t = j.torneio;
     const chave = chaveTorneio('m', t.id);
     if (!passa(situacaoMundial(j), seguindo.jogoMeu(chave, nomesMundial(j)))) continue;
     if (!grupos.has(chave)) {
@@ -100,14 +107,14 @@ function montarGrupos(
     }
     const vivo = j.status === 'live';
     const ordem = horarioMadriParaData(j.horarioMadri)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-    grupos.get(chave)!.linhas.push({ id: String(j.id), vivo, ordem, elemento: <LinhaMundial jogo={j} aceso={aceso === idJogoMundial(j)} /> });
+    grupos.get(chave)!.linhas.push({ id: String(j.id), vivo, ordem, elemento: <LinhaMundial jogo={j} aceso={aceso === idJogoMundial(j)} busca={termo} /> });
   }
 
   for (const { torneio: t, jogos } of dados.brasil) {
     const chave = chaveTorneio('br', t.id);
     const doDia = jogos.filter(
       (j: JogoBr) =>
-        j.data === dia &&
+        (termo ? casaBusca(termo, nomesBr(j), t.nome) : j.data === dia) &&
         (categoria === 'todos' || generoBr(j.categoria) === categoria) &&
         passa(situacaoBr(j), seguindo.jogoMeu(chave, nomesBr(j))),
     );
@@ -119,10 +126,12 @@ function montarGrupos(
       linhas: doDia.map((j) => ({
         id: j.id,
         vivo: j.status === 'live',
-        ordem: j.hora ? Number(j.hora.replace(':', '')) : Number.MAX_SAFE_INTEGER,
+        // data + hora (AAAAMMDDHHMM): na busca os jogos são de vários dias; sem hora, vai para o fim do dia
+        ordem: Number(`${(j.data ?? '9999-12-31').replaceAll('-', '')}${j.hora ? j.hora.replace(':', '') : '9999'}`),
         elemento: (
           <LinhaJogoBr
             jogo={j}
+            busca={termo}
             canais={t.ondeAssistir}
             torneio={t.nome}
             torneioId={t.id}
@@ -357,6 +366,9 @@ export function AbaJogos({ categoria, dia, jogo }: { categoria: Categoria; dia?:
   const seguindo = useSeguindo();
   const [filtro, setFiltro] = useState<FiltroJogos>('todos');
   const [aceso, setAceso] = useState<string | undefined>(jogo);
+  const [busca, setBusca] = useState('');
+  const termo = semAcento(busca).trim();
+  const buscando = termo.length >= MINIMO_BUSCA_JOGOS;
 
   const hoje = data?.hoje ?? diaISO(new Date());
   const diaEscolhido = dia ?? hoje;
@@ -368,6 +380,7 @@ export function AbaJogos({ categoria, dia, jogo }: { categoria: Categoria; dia?:
     if (!jogo || !data) return;
     setAceso(jogo);
     setFiltro('todos');
+    setBusca('');
     const id = setTimeout(() => document.getElementById(`jogo-${jogo}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
     const apaga = setTimeout(() => setAceso(undefined), 4000);
     return () => { clearTimeout(id); clearTimeout(apaga); };
@@ -385,7 +398,17 @@ export function AbaJogos({ categoria, dia, jogo }: { categoria: Categoria; dia?:
   }, [data]);
 
   // (sem useMemo: o "seguindo" muda a cada estrela e a conta é pequena)
-  const grupos = data ? montarGrupos(data, diaEscolhido, categoria, filtro, seguindo, aceso) : [];
+  const grupos = data ? montarGrupos(data, diaEscolhido, categoria, filtro, seguindo, aceso, buscando ? termo : '') : [];
+  const achados = grupos.reduce((n, g) => n + g.linhas.length, 0);
+
+  // Conta a busca no Umami quando a pessoa para de digitar (uma vez por termo)
+  const termoParado = useAtrasado(buscando ? termo : '');
+  const ultimaContada = useRef('');
+  useEffect(() => {
+    if (!termoParado || termoParado !== termo || ultimaContada.current === termoParado) return;
+    ultimaContada.current = termoParado;
+    registrar('busca-jogos', { termo: termoParado, jogos: achados });
+  }, [termoParado, termo, achados]);
 
   if (isPending) return <Carregando />;
   if (error) return <Aviso tipo="erro">Não consegui carregar os jogos: {error.message}</Aviso>;
@@ -394,21 +417,31 @@ export function AbaJogos({ categoria, dia, jogo }: { categoria: Categoria; dia?:
   const anteriorComJogo = [...diasComJogo].filter((d) => d < diaEscolhido).sort().at(-1);
   const todosRecolhidos = grupos.length > 0 && grupos.every((g) => recolhidos.has(g.chave));
   // o campeonato do jogo do link aparece aberto mesmo que a pessoa tenha recolhido
-  const estaRecolhido = (g: Grupo) => recolhidos.has(g.chave) && !(aceso && g.linhas.some((l) => aceso.endsWith(`-${l.id}`)));
+  // (na busca, tudo aberto: senão o resultado fica escondido num campeonato recolhido)
+  const estaRecolhido = (g: Grupo) =>
+    !buscando && recolhidos.has(g.chave) && !(aceso && g.linhas.some((l) => aceso.endsWith(`-${l.id}`)));
 
   return (
     <div className="space-y-4">
-      <ProximoJogo dados={data} seguindo={seguindo} onIr={irAoJogo} />
-      <FaixaDatas dia={diaEscolhido} hoje={hoje} diasComJogo={diasComJogo} onEscolher={setDia} de={data.de} ate={data.ate} />
+      <CampoBusca valor={busca} onMudar={setBusca} placeholder="Procura jogador, dupla ou torneio" rotulo="Procurar jogos" />
+      {!buscando && <ProximoJogo dados={data} seguindo={seguindo} onIr={irAoJogo} />}
+      {!buscando && <FaixaDatas dia={diaEscolhido} hoje={hoje} diasComJogo={diasComJogo} onEscolher={setDia} de={data.de} ate={data.ate} />}
       <FiltroSituacao valor={filtro} onMudar={setFiltro} />
 
       <div className="flex items-center justify-between gap-2 px-1">
-        <h2 className="text-sm font-semibold first-letter:uppercase">
-          {rotuloDia(diaEscolhido) === 'Hoje' || rotuloDia(diaEscolhido) === 'Amanhã' || rotuloDia(diaEscolhido) === 'Ontem'
-            ? `${rotuloDia(diaEscolhido)} · ${diaLongo(diaEscolhido)}`
-            : diaLongo(diaEscolhido)}
-        </h2>
-        {grupos.length > 1 && (
+        {buscando ? (
+          <h2 className="min-w-0 text-sm font-semibold">
+            {achados} {achados === 1 ? 'jogo' : 'jogos'} com “{busca.trim()}”
+            <span className="font-normal text-muted-foreground"> · todos os dias, {periodo(data.de, data.ate)}</span>
+          </h2>
+        ) : (
+          <h2 className="text-sm font-semibold first-letter:uppercase">
+            {rotuloDia(diaEscolhido) === 'Hoje' || rotuloDia(diaEscolhido) === 'Amanhã' || rotuloDia(diaEscolhido) === 'Ontem'
+              ? `${rotuloDia(diaEscolhido)} · ${diaLongo(diaEscolhido)}`
+              : diaLongo(diaEscolhido)}
+          </h2>
+        )}
+        {grupos.length > 1 && !buscando && (
           <Button
             variant="ghost"
             size="sm"
@@ -420,7 +453,14 @@ export function AbaJogos({ categoria, dia, jogo }: { categoria: Categoria; dia?:
         )}
       </div>
 
-      {grupos.length === 0 && filtro === 'meus' && !seguindo.algum ? (
+      {grupos.length === 0 && buscando ? (
+        <Aviso>
+          <span>
+            Nenhum jogo com “{busca.trim()}”{filtro !== 'todos' || categoria !== 'todos' ? ' nesses filtros' : ''}.
+          </span>
+          <Button variant="outline" size="sm" onClick={() => setBusca('')}>Limpar busca</Button>
+        </Aviso>
+      ) : grupos.length === 0 && filtro === 'meus' && !seguindo.algum ? (
         <Aviso>
           Toca na ☆ ao lado de uma dupla ou de um campeonato para seguir. Os jogos deles aparecem aqui, e o próximo
           jogo de quem tu segue fica no topo da aba.

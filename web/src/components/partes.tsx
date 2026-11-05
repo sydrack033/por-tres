@@ -1,11 +1,48 @@
 // Peças pequenas usadas em várias telas.
 import { useEffect, useRef } from 'react';
-import { AlertCircle, Inbox, Play, Tv } from 'lucide-react';
+import { AlertCircle, Inbox, Play, Search, Tv, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { periodo } from '@/lib/formato';
+import { periodo, semAcento } from '@/lib/formato';
 import type { Canal } from '@/lib/dados';
+
+// Campo de busca com a lupa e o X para limpar
+export function CampoBusca({
+  valor, onMudar, placeholder, rotulo,
+}: { valor: string; onMudar: (v: string) => void; placeholder: string; rotulo: string }) {
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        type="search"
+        value={valor}
+        onChange={(e) => onMudar(e.target.value)}
+        placeholder={placeholder}
+        aria-label={rotulo}
+        className="pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden"
+      />
+      {valor && (
+        <button
+          type="button"
+          onClick={() => onMudar('')}
+          aria-label="Limpar busca"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+        >
+          <X className="size-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Nome do jogador marcado quando casa com a busca (sem acento nem maiúscula)
+export function Destacar({ nome, busca, sobrenome }: { nome: string; busca: string; sobrenome: 'primeiro' | 'ultimo' }) {
+  const termo = semAcento(busca).trim();
+  if (!termo || !semAcento(nome).includes(termo)) return <NomeJogador nome={nome} sobrenome={sobrenome} />;
+  return <mark className="truncate rounded bg-bola px-0.5 text-black">{nome}</mark>;
+}
 
 export function Bandeira({ pais, className }: { pais?: string | null; className?: string }) {
   if (!pais || !/^[A-Za-z]{2}$/.test(pais)) return null;
